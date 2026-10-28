@@ -121,7 +121,7 @@ export function createInterimScore(smoothing = 1): ScoreFn {
 
 export const interimScore: ScoreFn = createInterimScore();
 
-export const FATIGUE_STRETCH_MIN = 120;
+export const FATIGUE_STRETCH_MIN = 240; // 4 h without a stop
 
 // Night driving only matters together with a long uninterrupted stretch, and
 // even then it changes advice, never the score or price.
@@ -139,7 +139,7 @@ export const TIP_TEMPLATES: Record<KpiId, string> = {
   phone_use_share:
     'Phone use was {from}% of your driving time. Keeping it at about {to}% would help most. Use a mount and set the route before you start.',
   fatigue_excess_min:
-    'Your longest drive ran {from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about {to}.',
+    'Your longest drive ran {from} minutes past 4 hours without a stop. Taking a break every 4 hours could bring that to about {to}.',
 };
 
 const fill = (template: string, from: number, to: number) =>
@@ -175,7 +175,7 @@ export function buildTips(result: ScoreResult, fatigue: boolean): Tip[] {
   if (fatigue && tips[0]?.kind !== 'fatigue_excess_min') {
     tips.push({
       kind: 'fatigue_context',
-      text: 'Some night drives ran over 2 hours without a stop. Plan a short break every 2 hours.',
+      text: 'Some night drives ran over 4 hours without a stop. Plan a short break before the 4-hour mark.',
       projectedScore: null,
     });
   }

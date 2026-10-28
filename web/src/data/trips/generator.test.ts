@@ -67,7 +67,7 @@ test('profiles differ the way the demo story needs', () => {
   const first = week('drv-002', '2026-09-28');
   assert.ok(first.secOverLimit / first.drivingSec > aggressive.secOverLimit / aggressive.drivingSec);
   // and has at least one long night stretch for the fatigue context.
-  assert.ok(trips.some((t) => t.driverId === 'drv-002' && t.nightKm > 0 && t.maxContinuousMin > 120));
+  assert.ok(trips.some((t) => t.driverId === 'drv-002' && t.nightKm > 0 && t.maxContinuousMin > 240));
   assert.ok(Object.keys(DEMO_PROFILES).every((id) => trips.some((t) => t.driverId === id)));
 });
 

@@ -89,10 +89,10 @@ test('main tip targets the KPI losing most points and projects a higher score', 
   assert.ok(tip.projectedScore! > r.score!);
 });
 
-test('fatigue context needs night driving and a stretch over 120 minutes', () => {
-  const t = { nightKm: 0, maxContinuousMin: 150 } as TripSummary;
+test('fatigue context needs night driving and a stretch over 240 minutes', () => {
+  const t = { nightKm: 0, maxContinuousMin: 270 } as TripSummary;
   assert.equal(hasFatigueContext([t]), false);
-  assert.equal(hasFatigueContext([{ ...t, nightKm: 10, maxContinuousMin: 90 }]), false);
+  assert.equal(hasFatigueContext([{ ...t, nightKm: 10, maxContinuousMin: 200 }]), false);
   assert.equal(hasFatigueContext([{ ...t, nightKm: 10 }]), true);
 
   const r = interimScore(totals(), []);

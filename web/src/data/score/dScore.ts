@@ -44,7 +44,7 @@ const SLOW_PRIOR = 3; // typical share in urban traffic, %
 export const PHONE_GOOD = 0; // % of driving time
 export const PHONE_BAD = 5;
 const PHONE_PRIOR = 1; // typical share, % of driving time, used for small-sample smoothing
-export const FATIGUE_BAD_EXCESS_MIN = 120; // 2 h beyond the stretch (4 h in total) scores 0
+export const FATIGUE_BAD_EXCESS_MIN = 120; // 2 h beyond the stretch (6 h in total) scores 0
 const SPEEDING_PRIOR = 5; // typical severity-weighted share, % of driving time
 const PRIOR_SEC = 3600;
 
@@ -95,7 +95,7 @@ export function speedingSeverityShare(t: TripTotals): number | null {
   return t.drivingSec > 0 ? (severitySeconds(t) / t.drivingSec) * 100 : null;
 }
 
-// Minutes the longest stretch ran past 2 h, scaled up by the night share of the distance.
+// Minutes the longest stretch ran past 4 h, scaled up by the night share of the distance.
 // Night alone adds nothing: it only matters together with a long uninterrupted stretch.
 export function fatigueExcessMin(t: TripTotals): number | null {
   if (t.distanceKm <= 0) return null;
@@ -161,7 +161,7 @@ export function createDScore(smoothing = 1): ScoreFn {
       id: 'fatigue_excess_min',
       label: 'Long drives without a break',
       value: fatigue === null ? null : r1(fatigue),
-      unit: 'min beyond 2 h',
+      unit: 'min beyond the limit',
       subscore: fatigueSub === null ? null : r1(fatigueSub),
       weight: weights.fatigue_excess_min,
       good: 0,

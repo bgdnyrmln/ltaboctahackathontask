@@ -11,7 +11,7 @@ export interface DrivingProfile {
   brakePer100: number;
   accelPer100: number;
   nightTripShare: number; // share of trips starting 23:00-04:59
-  longNightTrips: boolean; // some night trips run >120 min without a stop
+  longNightTrips: boolean; // some night trips run >240 min without a stop
   coverage: number;
   speedLimitSource: TripSummary['speedLimitSource'];
   improvement: number; // 0.4 = oldest week 40% worse, improving to the newest
@@ -140,8 +140,8 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
       if (now && start.getTime() > now.getTime()) continue;
 
       const longNight = night && profile.longNightTrips && rnd() < 0.5;
-      const distanceKm = round(longNight ? between(rnd, 160, 230) : between(rnd, ...profile.kmRange));
-      const speedKmh = longNight ? between(rnd, 75, 90) : between(rnd, 30, 70);
+      const distanceKm = round(longNight ? between(rnd, 290, 340) : between(rnd, ...profile.kmRange));
+      const speedKmh = longNight ? between(rnd, 60, 70) : between(rnd, 30, 70);
       const drivingSec = Math.round((distanceKm / speedKmh) * 3600);
       const durationSec = Math.round(drivingSec * between(rnd, 1.05, 1.25));
       // A trip still being driven is not a finished summary yet.

@@ -17,7 +17,7 @@ export interface KpiResult {
   id: KpiId;
   label: string;
   value: number | null; // observed, null without exposure
-  unit: '% of driving time' | 'per 100 km' | 'min beyond 2 h';
+  unit: '% of driving time' | 'per 100 km' | 'min beyond the limit';
   subscore: number | null; // 0..100 after small-sample smoothing
   weight: number; // preliminary, sums to 1
   good: number;
@@ -63,7 +63,7 @@ export interface WeeklyReport {
   trips: number;
   totals: TripTotals;
   result: ScoreResult;
-  fatigueContext: boolean; // night driving with a stretch over 120 min; advice only
+  fatigueContext: boolean; // night driving with a stretch over 240 min; advice only
   tips: Tip[];
   octa: OctaRecommendation;
 }

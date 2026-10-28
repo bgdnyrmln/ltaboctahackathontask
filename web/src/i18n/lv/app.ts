@@ -47,7 +47,7 @@ export const APP: Record<string, string> = {
   'Far below the limit': 'Ievērojami zem ierobežojuma',
   '% of driving time': '% no braukšanas laika',
   'per 100 km': 'uz 100 km',
-  'min beyond 2 h': 'min pēc 2 stundām',
+  'min beyond the limit': 'min pēc robežas',
   'Speeding took {from}% of your driving time. Bringing it down to {to}% is the biggest win this week.':
     'Ātruma pārsniegšana aizņēma {from}% no jūsu braukšanas laika. Samazinot to līdz {to}%, šonedēļ ieguvums būtu vislielākais.',
   'You braked hard {from} times per 100 km. Leaving more distance ahead could bring it to about {to}.':
@@ -58,12 +58,12 @@ export const APP: Record<string, string> = {
     'Jūs braucāt ievērojami zem ierobežojuma {from}% no braukšanas laika. Ja drošos apstākļos turaties pie satiksmes plūsmas, tas varētu samazināties līdz aptuveni {to}%.',
   'Phone use was {from}% of your driving time. Keeping it at about {to}% would help most. Use a mount and set the route before you start.':
     'Tālruņa lietošana bija {from}% no braukšanas laika. Ja to noturēsiet ap {to}%, tas palīdzēs visvairāk. Izmantojiet turētāju un iestatiet maršrutu pirms sākat braukt.',
-  'Your longest drive ran {from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about {to}.':
-    'Jūsu garākais brauciens ilga {from} minūtes pēc 2 stundām bez apstāšanās. Ja pārtraukumu veicat ik pēc 2 stundām, tas varētu samazināties līdz aptuveni {to}.',
+  'Your longest drive ran {from} minutes past 4 hours without a stop. Taking a break every 4 hours could bring that to about {to}.':
+    'Jūsu garākais brauciens ilga {from} minūtes pēc 4 stundām bez apstāšanās. Ja pārtraukumu veicat ik pēc 4 stundām, tas varētu samazināties līdz aptuveni {to}.',
   'Drive at least 30 km this week to get a score. Missing data never lowers your score.':
     'Nobrauciet vismaz 30 km šonedēļ, lai saņemtu vērtējumu. Trūkstoši dati nekad nepazemina jūsu vērtējumu.',
-  'Some night drives ran over 2 hours without a stop. Plan a short break every 2 hours.':
-    'Daži nakts braucieni ilga vairāk nekā 2 stundas bez apstāšanās. Plānojiet īsu pārtraukumu ik pēc 2 stundām.',
+  'Some night drives ran over 4 hours without a stop. Plan a short break before the 4-hour mark.':
+    'Daži nakts braucieni ilga vairāk nekā 4 stundas bez apstāšanās. Plānojiet īsu pārtraukumu pirms 4 stundu robežas.',
   'Not enough data for an estimate': 'Novērtējumam nepietiek datu',
   'Potential discount': 'Iespējama atlaide',
   'No change expected': 'Izmaiņas nav gaidāmas',

@@ -109,7 +109,7 @@ function dataLayerStrings(): Set<string> {
   for (const f of profileRisk(inputs, new Date('2026-10-28'), true).factors) found.add(f.label);
   // Fixed texts built in the score module.
   found.add('Drive at least 30 km this week to get a score. Missing data never lowers your score.');
-  found.add('Some night drives ran over 2 hours without a stop. Plan a short break every 2 hours.');
+  found.add('Some night drives ran over 4 hours without a stop. Plan a short break before the 4-hour mark.');
   return found;
 }
 

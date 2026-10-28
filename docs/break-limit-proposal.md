@@ -45,3 +45,7 @@ Until D changes the constant, the app shows 2 h. After the change it shows 5 h, 
 
 1. Use 5 h (300) as requested, or 4.5 h (270) to match the EU rule?
 2. Keep `FATIGUE_BAD_EXCESS_MIN` at 120?
+
+## Decision (Agent D's owner, 2026-10-28): 4 h
+
+The limit is now **4 h (`FATIGUE_STRETCH_MIN = 240`)**, between today's 2 h and the proposed 5 h. `FATIGUE_BAD_EXCESS_MIN` stays 120, so a stretch of 6 h in total scores 0 on the fatigue KPI. The tip texts and the KPI unit ("min beyond the limit") no longer say "2 h". The synthetic long night trips now run 290-340 km at 60-70 km/h, so Janis's "fatigue context" demo case stays. The break banner in the app follows the constant and now warns at 3 h 45 min and at 4 h. The pitch notes mention the EU rule for professional drivers (45 min after 4.5 h) as a reference.
