@@ -1,6 +1,6 @@
 # Frontend data contract: driver, vehicle, demo login (HACK-17)
 
-Audience: Agent B (frontend) and Agent D (scoring). Covers the HACK-15 mock data in `src/data/`. All records are synthetic.
+Audience: Agent B (frontend) and Agent D (scoring). Covers the HACK-15 mock data in `web/src/data/`. All records are synthetic.
 
 ## Validation result (2026-10-28)
 
@@ -74,5 +74,5 @@ UI -> `IdentityProvider.signIn` -> `DriverRegistry.getProfile` -> `Profile`. The
 ## Checks
 
 ```sh
-node --test src/data/validateRegistry.test.ts src/data/demoAuth.test.ts
+cd web && npm test
 ```

@@ -18,6 +18,7 @@ export interface TripSummary {
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number; // 23:00-05:00
+  maxContinuousMin: number; // longest stretch without a stop over 15 min
   coverage: number; // 0..1 share of trip with valid data
   speedLimitSource: 'map' | 'road_type_default' | 'unknown';
   source: TripSource;
@@ -40,6 +41,7 @@ export interface TripTotals {
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number;
+  maxContinuousMin: number; // longest single stretch, not a sum
   coverage: number; // distance-weighted mean, 0 when no distance
 }
 
