@@ -81,7 +81,7 @@ svg {
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  transition: background-color 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out;
 }
 
 .btn--primary {

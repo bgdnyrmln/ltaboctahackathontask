@@ -1,9 +1,19 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Shared mock data and contracts from Agent C live in ../src/data.
+  resolve: {
+    alias: {
+      '@data': fileURLToPath(new URL('../src/data/index.ts', import.meta.url)),
+    },
+  },
+  server: {
+    fs: { allow: ['..'] },
+  },
   plugins: [
     react(),
     VitePWA({

@@ -16,14 +16,41 @@ export function Header() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Full-screen mobile menu: lock page scroll and close on Escape or when resized to desktop.
+  useEffect(() => {
+    if (!menuOpen) return
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
+    const desktop = window.matchMedia('(min-width: 992px)')
+    const onDesktop = () => desktop.matches && setMenuOpen(false)
+    window.addEventListener('keydown', onKey)
+    desktop.addEventListener('change', onDesktop)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+      desktop.removeEventListener('change', onDesktop)
+    }
+  }, [menuOpen])
+
   const solid = scrolled || menuOpen
+  const closeMenu = () => setMenuOpen(false)
 
   return (
-    <header className={`site-header${solid ? ' site-header--solid' : ''}`}>
+    <header className={`site-header${solid ? ' site-header--solid' : ''}${menuOpen ? ' site-header--menu-open' : ''}`}>
       <div className="container site-header__inner">
-        <Link to="/" className="site-header__logo" aria-label={`${brand.name} home`}>
+        <Link to="/" className="site-header__logo" aria-label={`${brand.name} home`} onClick={closeMenu}>
           <Logo light={!solid} />
         </Link>
+
+        <nav className="site-nav" aria-label="Main">
+          <ul>
+            {nav.map((item) => (
+              <li key={item.href}>
+                <a href={item.href}>{item.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div className="site-header__actions">
           {canInstall && (
@@ -38,25 +65,35 @@ export function Header() {
             type="button"
             className="site-header__menu-btn"
             aria-expanded={menuOpen}
-            aria-controls="site-menu"
+            aria-controls="mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="site-header__burger" aria-hidden="true" />
-            Menu
+            {menuOpen ? 'Close' : 'Menu'}
           </button>
         </div>
       </div>
 
-      <nav id="site-menu" className="site-menu" hidden={!menuOpen} aria-label="Main">
+      <nav
+        id="mobile-menu"
+        className={`mobile-menu${menuOpen ? ' is-open' : ''}`}
+        aria-label="Main"
+        inert={!menuOpen}
+      >
         <ul className="container">
-          {nav.map((item) => (
-            <li key={item.href}>
-              <a href={item.href} onClick={() => setMenuOpen(false)}>
+          {nav.map((item, index) => (
+            <li key={item.href} style={{ '--i': index } as React.CSSProperties}>
+              <a href={item.href} onClick={closeMenu}>
                 {item.label}
               </a>
             </li>
           ))}
         </ul>
+        <div className="container mobile-menu__footer">
+          <a href="#score" className="btn btn--primary" onClick={closeMenu}>
+            Try demo
+          </a>
+        </div>
       </nav>
     </header>
   )
