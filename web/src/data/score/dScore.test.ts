@@ -51,26 +51,37 @@ const trip = (source: TripSummary['speedLimitSource'], distanceKm = 50): TripSum
   source: 'synthetic',
 });
 
-test('severity weights speeding by how far above the limit', () => {
+test('speeding is weighted by how far above the limit, relative to it', () => {
   // 9% of driving time over the limit in both cases.
-  const mild = totals({ secOverLimit: 900, secOver10: 0, secOver20: 0 });
-  const harsh = totals({ secOverLimit: 900, secOver10: 900, secOver20: 900 });
+  const none = { secOver10: 0, secOver20: 0, secOverPct10: 0, secOverPct20: 0, secOverPct40: 0 };
+  const mild = totals({ ...none, secOverLimit: 900 });
+  const harsh = totals({
+    secOverLimit: 900, secOver10: 900, secOver20: 900,
+    secOverPct10: 900, secOverPct20: 900, secOverPct40: 900,
+  });
   assert.equal(speedingSeverityShare(mild), 4.5);
-  assert.equal(speedingSeverityShare(harsh), 18);
+  assert.equal(speedingSeverityShare(harsh), 36);
   const s = createDScore(0);
   assert.ok((s(mild, []).score ?? 0) > (s(harsh, []).score ?? 100));
 });
 
-test('extreme speeding caps the score even with calm braking and acceleration', () => {
+test('a short spell far above the limit caps the score even with calm braking and acceleration', () => {
   const calm = { harshBrakeCount: 0, harshAccelCount: 0 };
-  const r = createDScore(0)(totals({ ...calm, secOverLimit: 600, secOver10: 600, secOver20: 600 }), []);
-  assert.equal(r.score, PEAK_CAP);
-  const below = createDScore(0)(totals({ ...calm, secOverLimit: 0, secOver10: 0, secOver20: 0 }), []);
+  const band = (pct40: number) => ({
+    secOverLimit: 250, secOver10: 250, secOver20: 250,
+    secOverPct10: 250, secOverPct20: 250, secOverPct40: pct40,
+  });
+  // 2% of driving time more than 40% over the limit.
+  const capped = createDScore(0)(totals({ ...calm, ...band(200) }), []);
+  assert.equal(capped.score, PEAK_CAP);
+  // Just under the threshold: the cap does not apply.
+  const below = createDScore(0)(totals({ ...calm, ...band(190) }), []);
   assert.ok((below.score ?? 0) > PEAK_CAP);
 });
 
 test('inconsistent or missing input gives no score instead of a wrong one', () => {
   assert.equal(isValidTotals(totals({ secOver10: 1000, secOverLimit: 900 })), false);
+  assert.equal(isValidTotals(totals({ secOverPct40: 60, secOverPct20: 50 })), false);
   assert.equal(isValidTotals(totals({ coverage: 1.2 })), false);
   assert.equal(isValidTotals(totals({ drivingSec: Number.NaN })), false);
   const r = dScore(totals({ secOver10: 1000, secOverLimit: 900 }), []);
