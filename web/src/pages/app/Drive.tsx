@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { LiveTripMap } from '../../components/LiveTripMap'
+import { ObdConnect } from '../../components/ObdConnect'
 import { PhoneFrame } from '../../components/PhoneFrame'
 import { useDriverData } from '../../demo/useDriverData'
+import { obdConnectedDevice, rpmFor } from '../../telemetry/obdLink'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
 import { SIMULATION_SPEEDUP } from '../../telemetry/simulatedDrive'
 import { MIN_TRIP } from '../../telemetry/tripRecorder'
@@ -94,6 +96,12 @@ export function Drive() {
               <dt>Harsh accel.</dt>
               <dd>{stats?.harshAccels ?? 0}</dd>
             </div>
+            {obdConnectedDevice() && (
+              <div>
+                <dt>Engine (OBD)</dt>
+                <dd>{rpmFor(stats?.speedKmh ?? 0)} rpm</dd>
+              </div>
+            )}
           </dl>
           <p className="muted live__gps">
             GPS accuracy: {stats?.accuracy != null ? `±${Math.round(stats.accuracy)} m` : '—'} · samples{' '}
@@ -129,6 +137,8 @@ export function Drive() {
   return (
     <div className="app-page">
       <h1 className="app-page__title">Drive</h1>
+
+      {canRecord && <ObdConnect vehicle={state.profile.vehicles[0]?.plateLabel ?? 'Your car'} />}
 
       {canRecord ? (
         <section className="panel drive-intro">

@@ -1753,3 +1753,195 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- OBD-II over Bluetooth (simulated) ---------- */
+.obd-card {
+  padding: 14px 16px;
+}
+
+.obd-card.is-on {
+  box-shadow: 0 0 0 1px #2e9e3a, var(--shadow-card);
+}
+
+.obd-card__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.obd-card__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e8f0fe;
+  color: #2f80ed;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.obd-card.is-on .obd-card__icon {
+  background: rgba(46, 158, 58, 0.12);
+  color: #2e9e3a;
+}
+
+.obd-card__text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.obd-card__text small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.obd-card .obd-card__btn {
+  flex: none;
+  min-height: 34px;
+  margin: 0;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(29, 29, 31, 0.45);
+  animation: page-in 0.25s ease-out;
+}
+
+.sheet__body {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-height: 88%;
+  overflow-y: auto;
+  padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--color-surface);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet__head h2 {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.sheet__close {
+  border: 0;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sheet__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.bt-radar {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2f80ed;
+}
+
+.bt-radar::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 2px solid #2f80ed;
+  border-radius: 50%;
+  animation: car-pulse 1.2s ease-out infinite;
+}
+
+.bt-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bt-device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: page-in 0.3s ease-out;
+}
+
+.bt-device:hover {
+  border-color: var(--color-accent);
+}
+
+.bt-device__name {
+  display: grid;
+  gap: 2px;
+  font-weight: 500;
+}
+
+.bt-device__name small {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.bt-device__rssi {
+  font-size: 12px;
+  letter-spacing: -1px;
+  color: #2e9e3a;
+}
+
+.obd-log {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  background: #1d1d1f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  list-style: none;
+}
+
+.obd-log li {
+  animation: page-in 0.2s ease-out;
+}
+
+.obd-log__out {
+  color: #84e0e7;
+}
+
+.obd-log__in {
+  color: #9be59f;
+}
+
+.obd-log__info {
+  color: #c9ced6;
+}
