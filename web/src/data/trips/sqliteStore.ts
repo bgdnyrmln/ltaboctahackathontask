@@ -113,7 +113,7 @@ const toParams = (t: TripSummary): SqlValue[] => [
   t.secOverPct10,
   t.secOverPct20,
   t.secOverPct40,
-  t.secPhoneUse,
+  t.secPhoneUse ?? 0,
   t.harshBrakeCount,
   t.harshAccelCount,
   t.nightKm,

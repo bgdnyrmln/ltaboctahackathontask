@@ -93,7 +93,7 @@ test('synthetic phone use follows the driver profile', () => {
   const trips = generateDemoTrips(WEEKS, NOW);
   const share = (id: string) => {
     const t = sumTrips(trips.filter((x) => x.driverId === id));
-    return t.secPhoneUse / t.drivingSec;
+    return (t.secPhoneUse ?? 0) / t.drivingSec;
   };
   assert.ok(share('drv-001') > 0 && share('drv-001') < 0.01, `Anna ${share('drv-001')}`);
   assert.ok(share('drv-002') > 0.02 && share('drv-002') < 0.08, `Janis ${share('drv-002')}`);

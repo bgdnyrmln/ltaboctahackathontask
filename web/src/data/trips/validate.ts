@@ -22,7 +22,6 @@ const COUNTERS = [
   'secOverPct10',
   'secOverPct20',
   'secOverPct40',
-  'secPhoneUse',
   'harshBrakeCount',
   'harshAccelCount',
   'nightKm',
@@ -81,8 +80,13 @@ export function validateTrip(trip: TripSummary): void {
     if (trip.secOverLimit > trip.drivingSec) {
       problems.push('secOverLimit exceeds drivingSec');
     }
-    if (trip.secPhoneUse > trip.drivingSec) {
-      problems.push('secPhoneUse exceeds drivingSec');
+    const phone = trip.secPhoneUse;
+    if (phone !== undefined) {
+      if (typeof phone !== 'number' || !Number.isFinite(phone) || phone < 0) {
+        problems.push('secPhoneUse must be a non-negative number');
+      } else if (phone > trip.drivingSec) {
+        problems.push('secPhoneUse exceeds drivingSec');
+      }
     }
     if (trip.nightKm > trip.distanceKm) problems.push('nightKm exceeds distanceKm');
   }
@@ -131,6 +135,7 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
   let weightedCoverage = 0;
   for (const t of trips) {
     for (const key of COUNTERS) totals[key] += t[key];
+    totals.secPhoneUse = (totals.secPhoneUse ?? 0) + (t.secPhoneUse ?? 0);
     totals.maxContinuousMin = Math.max(totals.maxContinuousMin, t.maxContinuousMin);
     weightedCoverage += t.coverage * t.distanceKm;
   }
