@@ -1945,3 +1945,56 @@
 .obd-log__info {
   color: #c9ced6;
 }
+
+/* Final score with D's profile factor */
+.final-score {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.final-score strong {
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+
+.final-score small {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.factors-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.factors-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.factors-list li span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.factors-list small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.factors-list li.is-unknown strong {
+  color: var(--color-text-muted);
+}
+
+.factors-list__adj {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}

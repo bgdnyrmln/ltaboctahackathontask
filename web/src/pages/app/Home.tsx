@@ -1,4 +1,4 @@
-import type { Confidence, RiskBand } from '@data'
+import { finalScore, inputsFromProfile, profileRisk, type Confidence, type RiskBand } from '@data'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { ScoreRing } from '../../components/ScoreRing'
@@ -28,6 +28,9 @@ export function Home() {
   if (state.status !== 'signedIn' || loading || !report) return <p className="muted">Loading…</p>
 
   const { result, totals, tips, octa } = report
+  // D's profile layer: a bounded factor from static data, applied on top of the behaviour score.
+  const risk = profileRisk(inputsFromProfile(state.profile, new Date()), new Date())
+  const fin = finalScore(result.score, risk)
   const previous = trend.length > 1 ? trend[trend.length - 2] : undefined
   const firstName = state.profile.driver.displayName.split(' ').pop()
   const nightShare = totals.distanceKm > 0 ? (totals.nightKm / totals.distanceKm) * 100 : 0
@@ -58,6 +61,12 @@ export function Home() {
             ) : (
               <>
                 <ScoreRing score={result.score} label={result.band ? BAND_TEXT[result.band] : ''} />
+                {fin.final !== null && (
+                  <p className="final-score">
+                    With profile: <strong>{fin.final}</strong> · Profile ×{risk.p.toFixed(2)}
+                    <small> Behaviour score above; tips use behaviour only.</small>
+                  </p>
+                )}
                 {previous?.score != null && (
                   <p className={`delta ${result.score >= previous.score ? 'delta--up' : 'delta--down'}`}>
                     {result.score >= previous.score ? '▲' : '▼'} {Math.abs(result.score - previous.score)} vs previous
@@ -117,7 +126,8 @@ export function Home() {
               ))}
             </ul>
             <p className="context-note">
-              Night driving: {fmt(nightShare, 0)}% of distance. Context only, not scored.
+              Night driving: {fmt(nightShare, 0)}% of distance. Counts only together with a long stretch without a
+              break.
               {report.fatigueContext && ' Some long night drives without a stop.'}
             </p>
           </section>

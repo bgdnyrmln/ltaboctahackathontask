@@ -34,7 +34,7 @@ function useIsDesktop() {
 export function Drive() {
   const { state } = useAuth()
   const { addTrip } = useDriverData()
-  const { status, stats, error, routeDone, start, stop } = useTripRecording()
+  const { status, stats, error, routeDone, start, stop, markPhone } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
   const isDesktop = useIsDesktop()
   const navigate = useNavigate()
@@ -58,7 +58,7 @@ export function Drive() {
 
   if (active) {
     return (
-      <div className="app-page">
+      <div className="app-page" onPointerDown={markPhone}>
         <h1 className="app-page__title">Drive</h1>
         <section className="panel live" aria-live="polite">
           <p className="live__status">
