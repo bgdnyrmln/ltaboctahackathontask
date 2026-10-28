@@ -40,10 +40,13 @@ test('P is bounded', () => {
   assert.ok(best.p >= P_MIN);
 });
 
-test('driver age is ignored unless explicitly enabled', () => {
-  assert.equal(profileRisk({ driverAge: 19 }, NOW).p, 1);
-  assert.equal(profileRisk({ driverAge: 19 }, NOW, true).p, 1.05);
-  assert.equal(profileRisk({ driverAge: 19 }, NOW).factors.some((f) => f.id === 'driver_age'), false);
+test('driver age counts by default and can be switched off', () => {
+  assert.equal(profileRisk({ driverAge: 19 }, NOW).p, 1.05);
+  assert.equal(profileRisk({ driverAge: 45 }, NOW).p, 1);
+  assert.equal(profileRisk({ driverAge: 75 }, NOW).p, 1.05);
+  assert.equal(profileRisk({ driverAge: 19 }, NOW, false).p, 1);
+  assert.equal(profileRisk({ driverAge: 19 }, NOW, false).factors.some((f) => f.id === 'driver_age'), false);
+  assert.equal(profileRisk({}, NOW).factors.find((f) => f.id === 'driver_age')?.known, false);
 });
 
 test('final score is behaviour divided by P and stays within 0..100', () => {
