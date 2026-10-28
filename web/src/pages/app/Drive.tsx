@@ -1,7 +1,8 @@
 import { OBD_DEMO_LABEL, SPEED_MAP_DEMO_LABEL } from '@data'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
+import { PhoneFrame } from '../../components/PhoneFrame'
 import { useDriverData } from '../../demo/useDriverData'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
 import { SIMULATION_SPEEDUP } from '../../telemetry/simulatedDrive'
@@ -14,12 +15,26 @@ const mmss = (sec: number) => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+// Desktop-width screens show the phone simulator; narrow browsers get the app-only notice.
+function useIsDesktop() {
+  const query = '(min-width: 992px)'
+  const [desktop, setDesktop] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setDesktop(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return desktop
+}
+
 export function Drive() {
   const { state } = useAuth()
   const { addTrip, recordDemoObdTrip } = useDriverData()
   const { status, stats, error, routeDone, start, stop } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
   const [obdBusy, setObdBusy] = useState(false)
+  const isDesktop = useIsDesktop()
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
 
@@ -104,6 +119,49 @@ export function Drive() {
     )
   }
 
+  const obdPanel = (
+    <section className="panel">
+      <h2 className="panel__title">Demo: connect a car</h2>
+      <p className="muted">
+        {OBD_DEMO_LABEL}. Plays a short scripted city drive through a mock OBD-II adapter and saves it.
+      </p>
+      <button type="button" className="btn btn--outline" onClick={runDemoDongle} disabled={obdBusy}>
+        {obdBusy ? 'Reading the dongle…' : 'Run demo drive'}
+      </button>
+    </section>
+  )
+
+  // On a computer the web account cannot record; it shows the phone app instead.
+  if (!canRecord && isDesktop) {
+    return (
+      <div className="app-page">
+        <h1 className="app-page__title">Drive</h1>
+        <div className="drive-sim">
+          <PhoneFrame caption="Mobile app" />
+          <div className="drive-sim__side">
+            <section className="panel">
+              <h2 className="panel__title">Start a trip on the phone</h2>
+              <p className="muted">
+                Trips are recorded by the mobile app, never by the web account. The phone here runs the same app. A
+                computer has no GPS, so it drives a scripted route through Riga.
+              </p>
+              <ol className="steps-list">
+                <li>
+                  Tap <strong>Start trip</strong> on the phone.
+                </li>
+                <li>Watch speed against the limit from the map, and harsh braking or acceleration as they happen.</li>
+                <li>
+                  Tap <strong>Stop and save</strong>. Your score and trips here update straight away (same data).
+                </li>
+              </ol>
+            </section>
+            {obdPanel}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app-page">
       <h1 className="app-page__title">Drive</h1>
@@ -172,15 +230,7 @@ export function Drive() {
         </section>
       )}
 
-      <section className="panel">
-        <h2 className="panel__title">Demo: connect a car</h2>
-        <p className="muted">
-          {OBD_DEMO_LABEL}. Plays a short scripted city drive through a mock OBD-II adapter and saves it.
-        </p>
-        <button type="button" className="btn btn--outline" onClick={runDemoDongle} disabled={obdBusy}>
-          {obdBusy ? 'Reading the dongle…' : 'Run demo drive'}
-        </button>
-      </section>
+      {obdPanel}
     </div>
   )
 }
