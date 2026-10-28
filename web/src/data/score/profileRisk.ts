@@ -15,7 +15,7 @@ export interface ProfileInputs {
   claimsLast5y?: number | null; // count of at-fault incidents
   penaltyPoints?: number | null;
   inspectionOverdue?: boolean | null;
-  driverAge?: number | null; // only used when includeAge is true
+  driverAge?: number | null; // skipped when includeAge is false
 }
 
 export interface ProfileFactor {
@@ -49,8 +49,9 @@ const missing = (id: ProfileFactor['id'], label: string): ProfileFactor => ({
   known: false,
 });
 
-// Driver age is the most sensitive input (discrimination risk), so it is off unless asked for.
-export function profileRisk(inputs: ProfileInputs, now: Date, includeAge = false): ProfileRisk {
+// Driver age is the most sensitive input (discrimination risk). It is on by team
+// decision, with a small bounded effect, and can be switched off with includeAge = false.
+export function profileRisk(inputs: ProfileInputs, now: Date, includeAge = true): ProfileRisk {
   const factors: ProfileFactor[] = [];
 
   const years = yearsSince(inputs.licenseSince, now);
