@@ -326,3 +326,68 @@
   font-weight: 800;
   font-size: 26px;
 }
+
+/* Driver database search */
+.ins-search-form {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 180px 180px auto;
+  align-items: end;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .ins-search-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ins-search-form .field__label {
+  font-size: 13px;
+}
+
+.ins-select {
+  text-transform: none;
+  background: #fff;
+}
+
+.ins-search-form__go {
+  min-height: 48px;
+  padding: 0 28px;
+}
+
+.ins-empty p {
+  color: var(--color-text-muted);
+}
+
+.ins-count {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.share-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.share-badge.is-on {
+  background: rgba(46, 158, 58, 0.12);
+  color: #2e9e3a;
+  font-weight: 500;
+}
+
+.ins-open {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.back-link.link-btn {
+  margin: 0;
+  justify-self: start;
+  text-decoration: none;
+}

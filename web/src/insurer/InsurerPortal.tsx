@@ -11,7 +11,7 @@ import './insurer.css'
 const ORG = 'Demo Insurer AS'
 const SESSION_KEY = 'foc.insurer'
 
-const BAND_TEXT: Record<RiskBand, string> = {
+export const BAND_TEXT: Record<RiskBand, string> = {
   low: 'Low risk',
   moderate_low: 'Moderate-low',
   moderate: 'Moderate',
@@ -26,7 +26,7 @@ function isSignedIn() {
   }
 }
 
-function usePortfolio() {
+export function usePortfolio() {
   const [rows, setRows] = useState<DriverRow[] | null>(null)
   const load = useCallback(() => {
     loadPortfolio().then(setRows)
@@ -84,8 +84,9 @@ export function InsurerLayout() {
         </div>
         <nav className="ins__nav" aria-label="Insurer">
           <NavLink to="/insurer" end>
-            Portfolio
+            Driver database
           </NavLink>
+          <NavLink to="/insurer/portfolio">Portfolio</NavLink>
           <NavLink to="/insurer/data">Data &amp; consent</NavLink>
         </nav>
         <div className="ins__user">
@@ -293,16 +294,19 @@ export function InsurerPortfolio() {
 
 export function InsurerDriver() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const rows = usePortfolio()
   if (!rows) return <p className="muted">Loading…</p>
   const r = rows.find((x) => x.driverId === id)
   if (!r || !r.shared) {
     return (
       <div className="ins-page">
-        <Link to="/insurer" className="back-link">
-          ← Portfolio
-        </Link>
-        <p className="muted">This driver does not share their driving score with you.</p>
+        <button type="button" className="link-btn back-link" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <p className="muted">
+          This driver does not share their driving data with you. Only name, personal code and vehicle are on record.
+        </p>
       </div>
     )
   }
@@ -311,9 +315,9 @@ export function InsurerDriver() {
 
   return (
     <div className="ins-page">
-      <Link to="/insurer" className="back-link">
-        ← Portfolio
-      </Link>
+      <button type="button" className="link-btn back-link" onClick={() => navigate(-1)}>
+        ← Back
+      </button>
       <div className="ins-page__head">
         <h1>{r.name}</h1>
         <p className="muted">
