@@ -20,7 +20,7 @@ export const hero = {
     { text: 'Know why', outlined: true },
   ],
   lead: 'Fake OCTA Coach turns everyday trips into a transparent driving score, one practical tip a week, and an illustrative OCTA estimate.',
-  primaryCta: { label: 'Try a sample trip', href: '#score' },
+  primaryCta: { label: 'Try the demo app', href: '/login' },
   secondaryCta: { label: 'How it works', href: '#how-it-works' },
 }
 

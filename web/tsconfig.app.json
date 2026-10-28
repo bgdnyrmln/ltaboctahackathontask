@@ -15,7 +15,8 @@
     "moduleDetection": "force",
     "noEmit": true,
     "paths": {
-      "@data": ["./src/data/index.ts"]
+      "@data": ["./src/data/index.ts"],
+      "@trips": ["./src/data/trips/index.ts"]
     },
     "jsx": "react-jsx",
 
