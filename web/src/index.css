@@ -166,3 +166,38 @@ svg {
   background: color-mix(in srgb, currentColor 22%, transparent);
   opacity: 1;
 }
+
+/* The switch never shrinks (it overlapped the badge in the narrow phone app bar), so the rest of that
+   bar is made compact enough to fit next to it. */
+.lang-switch {
+  flex: none;
+  white-space: nowrap;
+}
+.lang-switch__btn {
+  flex: none;
+}
+@media (max-width: 991px) {
+  .mobile-app__bar {
+    gap: 8px;
+  }
+  .mobile-app__bar .logo__name {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .mobile-app__bar .mobile-app__bar-end {
+    flex: none;
+    gap: 6px;
+  }
+  .mobile-app__bar .demo-badge {
+    flex: none;
+    white-space: nowrap;
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+  .mobile-app__bar .lang-switch {
+    font-size: 11px;
+  }
+  .mobile-app__bar .lang-switch__btn {
+    padding: 0.3rem 0.5rem;
+  }
+}
