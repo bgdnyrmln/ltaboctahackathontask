@@ -3,8 +3,7 @@ import { useMemo } from 'react'
 import { Link, useParams } from 'react-router'
 import { TripReplayMap } from '../../components/TripReplayMap'
 import { useDriverData } from '../../demo/useDriverData'
-import { PLACES } from '../../telemetry/simulatedDrive'
-import { analyzeSimTrip, simTripOf } from '../../telemetry/tripAnalysis'
+import { routeForTrip } from '../../demo/tripRoutes'
 
 const SOURCE_LABEL: Record<string, string> = {
   phone: 'Phone GPS',
@@ -43,11 +42,7 @@ export function TripDetail() {
   const { trips, loading } = useDriverData()
   const trip = trips.find((t) => t.id === id)
 
-  const route = useMemo(() => {
-    if (!trip) return null
-    const sim = simTripOf(trip.id)
-    return sim ? analyzeSimTrip(sim, trip.startedAt, trip.endedAt) : null
-  }, [trip])
+  const route = useMemo(() => (trip ? routeForTrip(trip) : null), [trip])
 
   const impact = useMemo(() => {
     if (!trip) return null
@@ -85,8 +80,8 @@ export function TripDetail() {
   const scoreWith = impact.withTrip.result.score
   const scoreWithout = impact.without.result.score
   const delta = scoreWith !== null && scoreWithout !== null ? scoreWith - scoreWithout : null
-  const from = route ? PLACES[route.trip.from].name : null
-  const to = route ? PLACES[route.trip.to].name : null
+  const from = route?.from ?? null
+  const to = route?.to ?? null
 
   return (
     <div className="app-page trip-detail">
@@ -105,11 +100,19 @@ export function TripDetail() {
           <section className="panel">
             <h2 className="panel__title">Route</h2>
             {route && from && to ? (
-              <TripReplayMap points={route.points} events={route.events} from={from} to={to} />
+              <>
+                {route.kind === 'illustrative' && (
+                  <p className="form-note">
+                    Illustrative route: this demo trip has no recorded positions, so its real totals (distance, time
+                    over the limit, harsh events) are shown on a sample Riga route.
+                  </p>
+                )}
+                <TripReplayMap points={route.points} events={route.events} from={from} to={to} />
+              </>
             ) : (
               <p className="muted">
-                No route to show. Routes are never stored for privacy; only trip totals are kept. Simulated trips from
-                the phone can be replayed because their route comes from the demo script.
+                No route to show. Routes recorded with the phone's GPS are never stored for privacy; only trip totals
+                are kept.
               </p>
             )}
           </section>

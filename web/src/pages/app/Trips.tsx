@@ -1,4 +1,6 @@
 import { Link, useLocation } from 'react-router'
+import { TripThumb } from '../../components/TripThumb'
+import { routeForTrip } from '../../demo/tripRoutes'
 import { useDriverData } from '../../demo/useDriverData'
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -39,9 +41,15 @@ export function Trips() {
           {list.map((t) => {
             const minutes = Math.round(t.drivingSec / 60)
             const speeding = t.drivingSec > 0 ? Math.round((t.secOverLimit / t.drivingSec) * 100) : 0
+            const route = routeForTrip(t)
             return (
               <li key={t.id}>
                 <Link to={`/app/trips/${t.id}`} className={`trip${t.id === savedId ? ' is-new' : ''}`}>
+                  {route && (
+                    <span className="trip__thumb">
+                      <TripThumb route={route} />
+                    </span>
+                  )}
                   <div className="trip__head">
                     <span className="trip__date">{dateFmt.format(new Date(t.startedAt))}</span>
                     <span className={`source source--${t.source}`}>{SOURCE_LABEL[t.source] ?? t.source}</span>
@@ -53,6 +61,11 @@ export function Trips() {
                     Over limit {speeding}% · braking {t.harshBrakeCount} · accel. {t.harshAccelCount}
                     {t.nightKm > 0 && ` · night ${t.nightKm.toFixed(1)} km`}
                   </p>
+                  {route && (
+                    <p className="trip__route">
+                      {route.from} → {route.to}
+                    </p>
+                  )}
                   <span className="trip__open" aria-hidden="true">
                     ›
                   </span>

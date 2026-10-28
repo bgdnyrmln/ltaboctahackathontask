@@ -2065,3 +2065,76 @@
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
+
+/* Static mini maps in the trip list */
+.trip-list a.trip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 14px;
+  align-items: center;
+}
+
+.trip-list a.trip > :not(.trip__thumb):not(.trip__open) {
+  grid-column: 2;
+}
+
+.trip__thumb {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  display: block;
+  width: 108px;
+}
+
+.trip-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.trip-thumb__bg {
+  fill: #eef1f5;
+}
+
+.trip-thumb polyline {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trip-thumb__start {
+  fill: #fff;
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+}
+
+.trip-thumb__end {
+  fill: var(--color-text);
+}
+
+.trip-thumb__ev--brake {
+  fill: #b3261e;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.trip-thumb__ev--accel {
+  fill: #e8a317;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.trip__route {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  .trip__thumb {
+    width: 84px;
+  }
+}
