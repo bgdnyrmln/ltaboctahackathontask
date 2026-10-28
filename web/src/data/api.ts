@@ -3,6 +3,7 @@
 // module later without touching screens.
 import { createDemoSmartIdAuth } from './demoAuth.ts';
 import type { DemoIdentityOption } from './demoAuth.ts';
+import { demoSpeedProfile, recordDemoDrive } from './obd/demoDrive.ts';
 import { createCsddMockRegistry } from './registry.ts';
 import { buildTrend, buildWeeklyReport } from './score/report.ts';
 import { interimScore } from './score/interimScore.ts';
@@ -37,6 +38,7 @@ export interface OctaApi {
   listTrips(weekStart?: string): Promise<TripSummary[]>;
   deleteMyData(): Promise<{ tripsDeleted: number }>;
   resetDemo(): Promise<void>;
+  recordDemoObdTrip(): Promise<TripSummary>; // simulated dongle, see OBD_DEMO_LABEL
 }
 
 export interface ApiOptions {
@@ -170,6 +172,19 @@ export function createApi(options: ApiOptions = {}): OctaApi {
       await trips.clear();
       seeding = null;
       await ensureSeeded();
+    },
+
+    async recordDemoObdTrip() {
+      const { driver, vehicles } = await requireProfile();
+      await ensureSeeded();
+      const durationMs = demoSpeedProfile().length * 1000;
+      const trip = await recordDemoDrive({
+        driverId: driver.id,
+        vehicleId: vehicles[0]?.id ?? null,
+        startedAt: new Date(now().getTime() - durationMs),
+      });
+      await trips.save([trip]);
+      return trip;
     },
   };
 }

@@ -17,6 +17,7 @@ await api.listTrips();                  // this week's TripSummary[]
 await api.deleteMyData();               // GDPR: removes trips, signs out
 await api.signOut();
 await api.resetDemo();                  // restore all demo data (for rehearsals)
+await api.recordDemoObdTrip();          // simulated OBD dongle drive; show OBD_DEMO_LABEL
 ```
 
 Data calls without a session throw `NotSignedInError`: send the user to login. Show `DEMO_LABEL` ("DEMO login, not Smart-ID") next to the login.
@@ -60,7 +61,7 @@ Your trips can replace the generator: save `TripSummary[]` (see `docs/trip-store
 
 ```sh
 cd web
-npm test               # 60 tests: registry, demo login, trip store, generator, score, api
+npm test               # 67 tests: registry, demo login, trip store, generator, score, api, OBD mock
 npm run typecheck:data
 npm run build
 ```
