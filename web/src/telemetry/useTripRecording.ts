@@ -2,7 +2,7 @@ import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
-import { startSimulatedDrive } from './simulatedDrive'
+import { pickRandomSimTrip, startSimulatedDrive } from './simulatedDrive'
 import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
@@ -77,7 +77,7 @@ export function useTripRecording() {
       setError(null)
       recorder.current = new TripRecorder('synthetic')
       setStatus('recording')
-      stopSimulation.current = startSimulatedDrive(ingest, () => setRouteDone(true))
+      stopSimulation.current = startSimulatedDrive(pickRandomSimTrip(), ingest, () => setRouteDone(true))
       return
     }
     if (!('geolocation' in navigator)) {
