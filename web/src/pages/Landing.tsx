@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { KpiIcon } from '../components/KpiIcon'
 import { ScoreRing } from '../components/ScoreRing'
 import { hero, kpiSection, privacy, scorePreview, steps } from '../content/landing'
@@ -57,9 +58,9 @@ function Hero() {
 
       <div className="container hero__inner">
         <div className="hero__actions">
-          <a href={hero.primaryCta.href} className="btn btn--primary">
+          <Link to={hero.primaryCta.href} className="btn btn--primary">
             {hero.primaryCta.label}
-          </a>
+          </Link>
           <a href={hero.secondaryCta.href} className="btn btn--outline-light">
             {hero.secondaryCta.label}
           </a>

@@ -58,9 +58,9 @@ export function Header() {
               Install app
             </button>
           )}
-          <a href="#score" className="btn btn--pill btn--outline-light site-header__demo">
+          <Link to="/login" className="btn btn--pill btn--outline-light site-header__demo">
             Try demo
-          </a>
+          </Link>
           <button
             type="button"
             className="site-header__menu-btn"
@@ -90,9 +90,9 @@ export function Header() {
           ))}
         </ul>
         <div className="container mobile-menu__footer">
-          <a href="#score" className="btn btn--primary" onClick={closeMenu}>
+          <Link to="/login" className="btn btn--primary" onClick={closeMenu}>
             Try demo
-          </a>
+          </Link>
         </div>
       </nav>
     </header>

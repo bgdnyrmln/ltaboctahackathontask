@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@data': fileURLToPath(new URL('../src/data/index.ts', import.meta.url)),
+      '@trips': fileURLToPath(new URL('../src/data/trips/index.ts', import.meta.url)),
     },
   },
   server: {
