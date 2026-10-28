@@ -1,6 +1,8 @@
 import { brand } from '../content/landing'
+import { useT } from '../i18n'
 
 export function Logo({ light = false }: { light?: boolean }) {
+  const t = useT()
   return (
     <span className={`logo${light ? ' logo--light' : ''}`}>
       <svg className="logo__mark" viewBox="0 0 32 32" aria-hidden="true">
@@ -10,7 +12,7 @@ export function Logo({ light = false }: { light?: boolean }) {
       </svg>
       <span className="logo__text">
         <span className="logo__name">{brand.name}</span>
-        <span className="logo__tagline">{brand.tagline}</span>
+        <span className="logo__tagline">{t(brand.tagline)}</span>
       </span>
     </span>
   )

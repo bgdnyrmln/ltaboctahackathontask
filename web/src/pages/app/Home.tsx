@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { ScoreRing } from '../../components/ScoreRing'
 import { firstName } from '../../demo/personas'
 import { useDriverData } from '../../demo/useDriverData'
+import { tipText, useLang, useT, useTn } from '../../i18n'
 
 const CONFIDENCE_TEXT: Record<Confidence, string> = {
   high: 'High confidence',
@@ -20,13 +21,16 @@ const BAND_TEXT: Record<RiskBand, string> = {
 }
 
 const fmt = (n: number, digits = 1) => n.toFixed(digits)
-const weekLabel = (weekStart: string) =>
-  new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(`${weekStart}T12:00:00`))
+const weekLabel = (weekStart: string, locale: string) =>
+  new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${weekStart}T12:00:00`))
 
 export function Home() {
+  const t = useT()
+  const tn = useTn()
+  const { lang } = useLang()
   const { state } = useAuth()
   const { loading, report, trend } = useDriverData()
-  if (state.status !== 'signedIn' || loading || !report) return <p className="muted">Loading…</p>
+  if (state.status !== 'signedIn' || loading || !report) return <p className="muted">{t('Loading…')}</p>
 
   const { result, totals, tips, octa } = report
   // D's profile layer: a bounded factor from static data, applied on top of the behaviour score.
@@ -38,61 +42,61 @@ export function Home() {
 
   return (
     <div className="app-page">
-      <h1 className="app-page__title">Hi, {name}</h1>
+      <h1 className="app-page__title">{t('Hi, {name}', { name })}</h1>
       <p className="muted">
-        This week · {fmt(totals.distanceKm, 0)} km · {report.trips} {report.trips === 1 ? 'trip' : 'trips'}
+        {t('This week')} · {fmt(totals.distanceKm, 0)} km · {tn(report.trips, '{n} trip', '{n} trips')}
       </p>
 
       <div className="dash">
         <div className="dash__col">
           <section className="panel score-panel" aria-labelledby="score-h">
             <h2 id="score-h" className="visually-hidden">
-              Driving score
+              {t('Driving score')}
             </h2>
             {result.score === null ? (
               <div className="insufficient">
                 <p className="insufficient__big">—</p>
                 <p>
-                  <strong>Not enough data yet.</strong> Missing data never lowers your score.
+                  <strong>{t('Not enough data yet.')}</strong> {t('Missing data never lowers your score.')}
                 </p>
                 <Link to="/app/drive" className="btn btn--primary">
-                  Record a trip
+                  {t('Record a trip')}
                 </Link>
               </div>
             ) : (
               <>
-                <ScoreRing score={result.score} label={result.band ? BAND_TEXT[result.band] : ''} />
+                <ScoreRing score={result.score} label={result.band ? t(BAND_TEXT[result.band]) : ''} />
                 {fin.final !== null && (
                   <p className="final-score">
-                    With profile: <strong>{fin.final}</strong> · Profile ×{risk.p.toFixed(2)}
-                    <small> Behaviour score above; tips use behaviour only.</small>
+                    {t('With profile:')} <strong>{fin.final}</strong> · {t('Profile ×{p}', { p: risk.p.toFixed(2) })}
+                    <small> {t('Behaviour score above; tips use behaviour only.')}</small>
                   </p>
                 )}
                 {previous?.score != null && (
                   <p className={`delta ${result.score >= previous.score ? 'delta--up' : 'delta--down'}`}>
-                    {result.score >= previous.score ? '▲' : '▼'} {Math.abs(result.score - previous.score)} vs previous
-                    week
+                    {result.score >= previous.score ? '▲' : '▼'}{' '}
+                    {t('{n} vs previous week', { n: Math.abs(result.score - previous.score) })}
                   </p>
                 )}
               </>
             )}
             {result.score !== null && (
-              <p className={`confidence confidence--${result.confidence}`}>{CONFIDENCE_TEXT[result.confidence]}</p>
+              <p className={`confidence confidence--${result.confidence}`}>{t(CONFIDENCE_TEXT[result.confidence])}</p>
             )}
             {result.score !== null && result.limitsApproximate && (
-              <p className="confidence confidence--limits">Speed limits are approximate (demo map).</p>
+              <p className="confidence confidence--limits">{t('Speed limits are approximate (demo map).')}</p>
             )}
           </section>
 
           {tips.map((tip) => (
             <section key={tip.kind} className="panel tip-card">
-              <h2 className="tip-card__title">{tip.kind === 'fatigue_context' ? 'Take breaks' : 'Tip of the week'}</h2>
+              <h2 className="tip-card__title">{tip.kind === 'fatigue_context' ? t('Take breaks') : t('Tip of the week')}</h2>
               <p>
-                {tip.text}
+                {tipText(t, tip)}
                 {tip.projectedScore !== null && result.score !== null && (
                   <>
                     {' '}
-                    Your score could rise from {result.score} to about {tip.projectedScore}.
+                    {t('Your score could rise from {from} to about {to}.', { from: result.score, to: tip.projectedScore })}
                   </>
                 )}
               </p>
@@ -100,48 +104,48 @@ export function Home() {
           ))}
 
           <section className="panel octa-card">
-            <h2 className="octa-card__title">Illustrative OCTA direction</h2>
-            <p className="octa-card__band">{octa.label}</p>
-            <p className="octa-card__disclaimer">{octa.disclaimer}</p>
+            <h2 className="octa-card__title">{t('Illustrative OCTA direction')}</h2>
+            <p className="octa-card__band">{t(octa.label)}</p>
+            <p className="octa-card__disclaimer">{t(octa.disclaimer)}</p>
           </section>
         </div>
 
         <div className="dash__col">
           <section className="panel">
-            <h2 className="panel__title">What shaped your score</h2>
+            <h2 className="panel__title">{t('What shaped your score')}</h2>
             <ul className="kpi-list">
               {result.kpis.map((k) => (
                 <li key={k.id} className="kpi-row">
                   <div className="kpi-row__head">
-                    <span className="kpi-row__label">{k.label}</span>
+                    <span className="kpi-row__label">{t(k.label)}</span>
                     <span className="kpi-row__value">
-                      {k.value === null ? '—' : fmt(k.value)} <small>{k.unit}</small>
+                      {k.value === null ? '—' : fmt(k.value)} <small>{t(k.unit)}</small>
                     </span>
                   </div>
                   <div className="bar" aria-hidden="true">
                     <span style={{ width: `${k.subscore ?? 0}%` }} />
                   </div>
                   <p className="kpi-row__meta">
-                    {k.subscore === null ? 'No data' : `${Math.round(k.subscore)}/100`} · weight{' '}
-                    {Math.round(k.weight * 100)}%
-                    {k.pointsLost !== null && k.pointsLost >= 1 && ` · −${fmt(k.pointsLost, 0)} pts`}
+                    {k.subscore === null
+                      ? t('No data')
+                      : t('{score}/100 · weight {w}%', { score: Math.round(k.subscore), w: Math.round(k.weight * 100) })}
+                    {k.pointsLost !== null && k.pointsLost >= 1 && ` · ${t('−{n} pts', { n: fmt(k.pointsLost, 0) })}`}
                   </p>
                 </li>
               ))}
             </ul>
             <p className="context-note">
-              Night driving: {fmt(nightShare, 0)}% of distance. Counts only together with a long stretch without a
-              break.
-              {report.fatigueContext && ' Some long night drives without a stop.'}
+              {t('Night driving: {n}% of distance. Counts only together with a long stretch without a break.', { n: fmt(nightShare, 0) })}
+              {report.fatigueContext && ` ${t('Some long night drives without a stop.')}`}
             </p>
           </section>
 
           <section className="panel">
-            <h2 className="panel__title">Trend</h2>
+            <h2 className="panel__title">{t('Trend')}</h2>
             <div
               className="trend"
               role="img"
-              aria-label={`Weekly scores: ${trend.map((w) => w.score ?? 'no data').join(', ')}`}
+              aria-label={t('Weekly scores: {list}', { list: trend.map((w) => w.score ?? t('no data')).join(', ') })}
             >
               {trend.map((w, i) => (
                 <div key={w.weekStart} className="trend__col">
@@ -150,7 +154,7 @@ export function Home() {
                     className={`trend__bar${i === trend.length - 1 ? ' is-current' : ''}`}
                     style={{ height: `${w.score ?? 4}%` }}
                   />
-                  <span className="trend__label">{i === trend.length - 1 ? 'Now' : weekLabel(w.weekStart)}</span>
+                  <span className="trend__label">{i === trend.length - 1 ? t('Now') : weekLabel(w.weekStart, lang === 'lv' ? 'lv-LV' : 'en-GB')}</span>
                 </div>
               ))}
             </div>
@@ -159,7 +163,7 @@ export function Home() {
       </div>
 
       <p className="provisional-note">
-        Weights and thresholds are illustrative, not final.
+        {t('Weights and thresholds are illustrative, not final.')}
       </p>
     </div>
   )

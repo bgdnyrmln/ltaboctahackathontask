@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useObdLink } from '../telemetry/obdLink'
+import { useT } from '../i18n'
 
 // Phone card + sheet: connect a (simulated) OBD-II adapter over Bluetooth.
 export function ObdConnect({ vehicle }: { vehicle: string }) {
+  const t = useT()
   const obd = useObdLink()
   const [open, setOpen] = useState(false)
   const busy = obd.status === 'scanning' || obd.status === 'pairing' || obd.status === 'initializing'
@@ -15,16 +17,16 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
             ᛒ
           </span>
           <div className="obd-card__text">
-            <strong>{obd.status === 'connected' ? `${obd.device?.name} connected` : 'OBD-II adapter'}</strong>
+            <strong>{obd.status === 'connected' ? t('{name} connected', { name: obd.device?.name ?? '' }) : t('OBD-II adapter')}</strong>
             <small>
               {obd.status === 'connected'
-                ? `${vehicle} · speed and engine data from the car`
-                : 'Not connected · using phone GPS'}
+                ? t('{vehicle} · speed and engine data from the car', { vehicle })
+                : t('Not connected · using phone GPS')}
             </small>
           </div>
           {obd.status === 'connected' ? (
             <button type="button" className="link-btn obd-card__btn" onClick={obd.disconnect}>
-              Disconnect
+              {t('Disconnect')}
             </button>
           ) : (
             <button
@@ -35,21 +37,21 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
                 obd.scan()
               }}
             >
-              Connect
+              {t('Connect')}
             </button>
           )}
         </div>
       </section>
 
       {open && (
-        <div className="sheet" role="dialog" aria-label="Connect OBD-II adapter">
+        <div className="sheet" role="dialog" aria-label={t('Connect OBD-II adapter')}>
           <div className="sheet__body">
             <div className="sheet__head">
-              <h2>Connect OBD-II adapter</h2>
+              <h2>{t('Connect OBD-II adapter')}</h2>
               <button
                 type="button"
                 className="sheet__close"
-                aria-label="Close"
+                aria-label={t('Close')}
                 onClick={() => {
                   obd.cancel()
                   setOpen(false)
@@ -58,17 +60,17 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
                 ×
               </button>
             </div>
-            <p className="demo-label">Simulated Bluetooth, no hardware needed</p>
+            <p className="demo-label">{t('Simulated Bluetooth, no hardware needed')}</p>
 
             {(obd.status === 'scanning' || obd.status === 'found' || obd.status === 'error') && (
               <>
                 <p className="sheet__status">
                   {obd.status === 'scanning' ? (
                     <>
-                      <span className="bt-radar" aria-hidden="true" /> Searching for Bluetooth devices…
+                      <span className="bt-radar" aria-hidden="true" /> {t('Searching for Bluetooth devices…')}
                     </>
                   ) : (
-                    'Devices nearby'
+                    t('Devices nearby')
                   )}
                 </p>
                 <ul className="bt-list">
@@ -79,7 +81,7 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
                           {d.name}
                           <small>{d.detail}</small>
                         </span>
-                        <span className="bt-device__rssi" aria-label={`Signal ${d.rssi} dBm`}>
+                        <span className="bt-device__rssi" aria-label={t('Signal {n} dBm', { n: d.rssi })}>
                           {d.rssi > -60 ? '▂▄▆█' : d.rssi > -75 ? '▂▄▆' : '▂▄'}
                         </span>
                       </button>
@@ -95,17 +97,17 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
                 <p className="sheet__status">
                   {obd.status === 'pairing' ? (
                     <>
-                      <span className="spinner" aria-hidden="true" /> Pairing…
+                      <span className="spinner" aria-hidden="true" /> {t('Pairing…')}
                     </>
                   ) : obd.status === 'initializing' ? (
                     <>
-                      <span className="spinner" aria-hidden="true" /> Initialising adapter…
+                      <span className="spinner" aria-hidden="true" /> {t('Initialising adapter…')}
                     </>
                   ) : (
-                    <>✓ Connected to {obd.device?.name}</>
+                    <>✓ {t('Connected to {name}', { name: obd.device?.name ?? '' })}</>
                   )}
                 </p>
-                <ol className="obd-log" aria-label="Adapter log">
+                <ol className="obd-log" aria-label={t('Adapter log')}>
                   {obd.log.map((l, i) => (
                     <li key={i} className={`obd-log__${l.dir}`}>
                       {l.dir === 'out' ? '> ' : l.dir === 'in' ? '< ' : ''}
@@ -116,10 +118,10 @@ export function ObdConnect({ vehicle }: { vehicle: string }) {
                 {obd.status === 'connected' && (
                   <>
                     <p className="muted">
-                      {vehicle} · engine idling at {obd.idleRpm ?? 820} rpm. Trips now use the car's own speed data.
+                      {t("{vehicle} · engine idling at {rpm} rpm. Trips now use the car's own speed data.", { vehicle, rpm: obd.idleRpm ?? 820 })}
                     </p>
                     <button type="button" className="btn btn--primary btn--big" onClick={() => setOpen(false)}>
-                      Done
+                      {t('Done')}
                     </button>
                   </>
                 )}

@@ -2,6 +2,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState } from 'react'
 import type { RouteEvent, RoutePoint, SpeedState } from '../telemetry/tripAnalysis'
+import { useT } from '../i18n'
 
 // Whole trip on a map, coloured by speed state, with a replay of the drive.
 const COLORS: Record<SpeedState, string> = { ok: '#2e9e3a', over: '#ff4512', slow: '#2f80ed' }
@@ -47,6 +48,7 @@ export function TripReplayMap({
   from: string
   to: string
 }) {
+  const t = useT()
   const el = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const lines = useRef<Array<{ line: L.Polyline; from: number; to: number }>>([])
@@ -179,15 +181,15 @@ export function TripReplayMap({
               {Math.round(readout.kmh)}
               <small> km/h</small>
             </p>
-            <p className="ltm__limit">Limit {readout.limit}</p>
+            <p className="ltm__limit">{t('Limit')} {readout.limit}</p>
           </div>
         )}
       </div>
       <div className="trip-map__controls">
         <button type="button" className="btn btn--primary" onClick={() => (playing ? setPlaying(false) : play())}>
-          {playing ? 'Pause' : progress >= 1 ? '▶ Replay trip' : '▶ Resume'}
+          {playing ? t('Pause') : progress >= 1 ? t('▶ Replay trip') : t('▶ Resume')}
         </button>
-        <div className="seg" role="group" aria-label="Replay speed">
+        <div className="seg" role="group" aria-label={t('Replay speed')}>
           {SPEEDS.map((s) => (
             <button
               key={s.label}
@@ -195,7 +197,7 @@ export function TripReplayMap({
               className={factor === s.factor ? 'is-on' : ''}
               onClick={() => changeSpeed(s.factor)}
             >
-              {s.label}
+              {t(s.label)}
             </button>
           ))}
         </div>
@@ -203,7 +205,7 @@ export function TripReplayMap({
           <span style={{ width: `${Math.min(100, progress * 100)}%` }} />
         </div>
         <button type="button" className="btn btn--outline" onClick={() => setBig((b) => !b)}>
-          {big ? 'Smaller map' : 'Larger map'}
+          {big ? t('Smaller map') : t('Larger map')}
         </button>
       </div>
     </div>

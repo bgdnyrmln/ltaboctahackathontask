@@ -43,6 +43,10 @@ export interface Tip {
   kind: KpiId | 'fatigue_context' | 'more_data';
   text: string;
   projectedScore: number | null; // score if the driver follows the tip
+  // For translation: text is template filled with params ({from}, {to}); the UI can show the
+  // template in another language and fill the same numbers.
+  template?: string;
+  params?: { from: number; to: number };
 }
 
 export type OctaDirection = 'potential_discount' | 'no_change' | 'possible_surcharge';

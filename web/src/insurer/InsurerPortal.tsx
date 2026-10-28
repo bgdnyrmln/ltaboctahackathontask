@@ -5,6 +5,7 @@ import { onSharedDataChange } from '../auth/appApi'
 import { Logo } from '../components/Logo'
 import { maskCode, PERSONAL_CODE_NOTE } from '../demo/personas'
 import { loadPortfolio, portfolioCsv, type DriverRow } from './portfolio'
+import { LangSwitch, useT, useTn } from '../i18n'
 import './insurer.css'
 
 // Insurer portal (demo). A fictional insurer, not Balcia or any real company.
@@ -40,15 +41,16 @@ export function usePortfolio() {
 }
 
 export function InsurerLogin() {
+  const t = useT()
   const navigate = useNavigate()
   return (
     <div className="ins-login">
       <div className="ins-login__card">
         <Logo />
-        <h1>Insurer portal</h1>
+        <LangSwitch />
+        <h1>{t('Insurer portal')}</h1>
         <p className="muted">
-          Weekly driving-score summaries of drivers who chose to share them. Demo: fictional insurer, synthetic data, no
-          real quotes.
+          {t('Weekly driving-score summaries of drivers who chose to share them. Demo: fictional insurer, synthetic data, no real quotes.')}
         </p>
         <button
           type="button"
@@ -62,10 +64,10 @@ export function InsurerLogin() {
             navigate('/insurer', { replace: true })
           }}
         >
-          Sign in as {ORG}
+          {t('Sign in as {org}', { org: ORG })}
         </button>
         <Link to="/" className="back-link">
-          ← Back to the site
+          {t('← Back to the site')}
         </Link>
       </div>
     </div>
@@ -73,6 +75,7 @@ export function InsurerLogin() {
 }
 
 export function InsurerLayout() {
+  const t = useT()
   const navigate = useNavigate()
   if (!isSignedIn()) return <Navigate to="/insurer/login" replace />
   return (
@@ -80,18 +83,19 @@ export function InsurerLayout() {
       <header className="ins__bar">
         <div className="ins__brand">
           <Logo />
-          <span className="ins__badge">Insurer portal</span>
+          <span className="ins__badge">{t('Insurer portal')}</span>
         </div>
-        <nav className="ins__nav" aria-label="Insurer">
+        <nav className="ins__nav" aria-label={t('Insurer')}>
           <NavLink to="/insurer" end>
-            Driver database
+            {t('Driver database')}
           </NavLink>
-          <NavLink to="/insurer/portfolio">Portfolio</NavLink>
-          <NavLink to="/insurer/data">Data &amp; consent</NavLink>
+          <NavLink to="/insurer/portfolio">{t('Portfolio')}</NavLink>
+          <NavLink to="/insurer/data">{t('Data & consent')}</NavLink>
         </nav>
         <div className="ins__user">
           <span>{ORG}</span>
-          <span className="demo-badge">Demo data</span>
+          <LangSwitch />
+          <span className="demo-badge">{t('Demo data')}</span>
           <button
             type="button"
             className="link-btn"
@@ -104,7 +108,7 @@ export function InsurerLayout() {
               navigate('/insurer/login')
             }}
           >
-            Sign out
+            {t('Sign out')}
           </button>
         </div>
       </header>
@@ -112,8 +116,7 @@ export function InsurerLayout() {
         <Outlet />
       </main>
       <footer className="ins__foot">
-        Hackathon simulation. Scores and OCTA directions are illustrative, not a tariff, quote or offer from Balcia or
-        any other insurer.
+        {t('Hackathon simulation. Scores and OCTA directions are illustrative, not a tariff, quote or offer from Balcia or any other insurer.')}
       </footer>
     </div>
   )
@@ -131,6 +134,8 @@ function Spark({ values }: { values: Array<number | null> }) {
 }
 
 export function InsurerPortfolio() {
+  const t = useT()
+  const tn = useTn()
   const rows = usePortfolio()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'score' | 'name'>('score')
@@ -152,7 +157,7 @@ export function InsurerPortfolio() {
     )
   }, [rows, query, sort])
 
-  if (!rows) return <p className="muted">Loading…</p>
+  if (!rows) return <p className="muted">{t('Loading…')}</p>
 
   const scored = shared.filter((r) => r.shared!.final !== null)
   const avg = scored.length ? Math.round(scored.reduce((s, r) => s + r.shared!.final!, 0) / scored.length) : null
@@ -172,37 +177,37 @@ export function InsurerPortfolio() {
   return (
     <div className="ins-page">
       <div className="ins-page__head">
-        <h1>Portfolio</h1>
-        <p className="muted">This week's driving scores from drivers who share them with you. Updates live.</p>
+        <h1>{t('Portfolio')}</h1>
+        <p className="muted">{t("This week's driving scores from drivers who share them with you. Updates live.")}</p>
       </div>
 
       <div className="ins-stats">
         <div className="ins-stat">
-          <span>Drivers sharing</span>
+          <span>{t('Drivers sharing')}</span>
           <strong>
             {shared.length}
             <small> / {rows.length}</small>
           </strong>
         </div>
         <div className="ins-stat">
-          <span>Average final score</span>
+          <span>{t('Average final score')}</span>
           <strong>{avg ?? '—'}</strong>
         </div>
         <div className="ins-stat">
-          <span>Distance this week</span>
+          <span>{t('Distance this week')}</span>
           <strong>
             {km}
             <small> km</small>
           </strong>
         </div>
         <div className="ins-stat ins-stat--bands">
-          <span>Risk bands</span>
+          <span>{t('Risk bands')}</span>
           <div className="bands">
             {bands.map((b) => (
               <div key={b} className={`bands__col bands__col--${b}`}>
                 <i style={{ height: `${shared.length ? (bandCount(b) / shared.length) * 100 : 0}%` }} />
                 <b>{bandCount(b)}</b>
-                <small>{BAND_TEXT[b]}</small>
+                <small>{t(BAND_TEXT[b])}</small>
               </div>
             ))}
           </div>
@@ -213,21 +218,21 @@ export function InsurerPortfolio() {
         <div className="ins-toolbar">
           <input
             className="field__input ins-search"
-            placeholder="Search name, personal code or plate"
+            placeholder={t('Search name, personal code or plate')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search drivers"
+            aria-label={t('Search drivers')}
           />
-          <div className="seg" role="group" aria-label="Sort">
+          <div className="seg" role="group" aria-label={t('Sort')}>
             <button type="button" className={sort === 'score' ? 'is-on' : ''} onClick={() => setSort('score')}>
-              By score
+              {t('By score')}
             </button>
             <button type="button" className={sort === 'name' ? 'is-on' : ''} onClick={() => setSort('name')}>
-              By name
+              {t('By name')}
             </button>
           </div>
           <button type="button" className="btn btn--outline" onClick={download}>
-            Export CSV
+            {t('Export CSV')}
           </button>
         </div>
 
@@ -235,15 +240,15 @@ export function InsurerPortfolio() {
           <table className="ins-table">
             <thead>
               <tr>
-                <th>Driver</th>
-                <th>Vehicle</th>
-                <th>Final score</th>
-                <th>Behaviour</th>
-                <th>Profile</th>
-                <th>Band</th>
-                <th>Trend (4 wk)</th>
-                <th>This week</th>
-                <th>OCTA direction</th>
+                <th>{t('Driver')}</th>
+                <th>{t('Vehicle')}</th>
+                <th>{t('Final score')}</th>
+                <th>{t('Behaviour')}</th>
+                <th>{t('Profile')}</th>
+                <th>{t('Band')}</th>
+                <th>{t('Trend (4 wk)')}</th>
+                <th>{t('This week')}</th>
+                <th>{t('OCTA direction')}</th>
               </tr>
             </thead>
             <tbody>
@@ -267,18 +272,18 @@ export function InsurerPortfolio() {
                         </td>
                         <td className="num">{s.report.result.score ?? '—'}</td>
                         <td className="num">×{s.risk.p.toFixed(2)}</td>
-                        <td>{s.report.result.band ? BAND_TEXT[s.report.result.band] : 'Not enough data'}</td>
+                        <td>{s.report.result.band ? t(BAND_TEXT[s.report.result.band]) : t('Not enough data')}</td>
                         <td>
                           <Spark values={s.trend.map((t) => t.score)} />
                         </td>
                         <td className="num">
-                          {Math.round(s.report.totals.distanceKm)} km · {s.report.trips} trips
+                          {Math.round(s.report.totals.distanceKm)} km · {tn(s.report.trips, '{n} trip', '{n} trips')}
                         </td>
-                        <td>{s.report.octa.label}</td>
+                        <td>{t(s.report.octa.label)}</td>
                       </>
                     ) : (
                       <td colSpan={7} className="muted">
-                        {r.deleted ? 'Driver deleted their data' : 'Not shared by the driver'}
+                        {r.deleted ? t('Driver deleted their data') : t('Not shared by the driver')}
                       </td>
                     )}
                   </tr>
@@ -293,19 +298,21 @@ export function InsurerPortfolio() {
 }
 
 export function InsurerDriver() {
+  const t = useT()
+  const tn = useTn()
   const { id } = useParams()
   const navigate = useNavigate()
   const rows = usePortfolio()
-  if (!rows) return <p className="muted">Loading…</p>
+  if (!rows) return <p className="muted">{t('Loading…')}</p>
   const r = rows.find((x) => x.driverId === id)
   if (!r || !r.shared) {
     return (
       <div className="ins-page">
         <button type="button" className="link-btn back-link" onClick={() => navigate(-1)}>
-          ← Back
+          {t('← Back')}
         </button>
         <p className="muted">
-          This driver does not share their driving data with you. Only name, personal code and vehicle are on record.
+          {t('This driver does not share their driving data with you. Only name, personal code and vehicle are on record.')}
         </p>
       </div>
     )
@@ -316,47 +323,47 @@ export function InsurerDriver() {
   return (
     <div className="ins-page">
       <button type="button" className="link-btn back-link" onClick={() => navigate(-1)}>
-        ← Back
+        {t('← Back')}
       </button>
       <div className="ins-page__head">
         <h1>{r.name}</h1>
         <p className="muted">
           {r.personalCode && (
             <span title={PERSONAL_CODE_NOTE}>
-              Personal code {r.personalCode} <span className="demo-tag">demo</span> ·{' '}
+              {t('Personal code')} {r.personalCode} <span className="demo-tag">{t('demo')}</span> ·{' '}
             </span>
           )}
-          {r.plate && <span className="plate">{r.plate}</span>} {r.vehicle} · week of {s.report.weekStart}
+          {r.plate && <span className="plate">{r.plate}</span>} {r.vehicle} · {t('week of {date}', { date: s.report.weekStart })}
         </p>
       </div>
 
       <div className="ins-stats">
         <div className="ins-stat">
-          <span>Final score</span>
+          <span>{t('Final score')}</span>
           <strong>{s.final ?? '—'}</strong>
         </div>
         <div className="ins-stat">
-          <span>Behaviour score</span>
+          <span>{t('Behaviour score')}</span>
           <strong>{res.score ?? '—'}</strong>
         </div>
         <div className="ins-stat">
-          <span>Profile factor</span>
+          <span>{t('Profile factor')}</span>
           <strong>×{s.risk.p.toFixed(2)}</strong>
         </div>
         <div className="ins-stat">
-          <span>OCTA direction (illustrative)</span>
-          <strong className="ins-stat__text">{s.report.octa.label}</strong>
+          <span>{t('OCTA direction (illustrative)')}</span>
+          <strong className="ins-stat__text">{t(s.report.octa.label)}</strong>
         </div>
       </div>
 
       <div className="dash">
         <div className="dash__col">
           <section className="panel">
-            <h2 className="panel__title">Score trend</h2>
+            <h2 className="panel__title">{t('Score trend')}</h2>
             <div
               className="trend"
               role="img"
-              aria-label={`Weekly scores: ${s.trend.map((t) => t.score ?? 'no data').join(', ')}`}
+              aria-label={t('Weekly scores: {list}', { list: s.trend.map((w) => w.score ?? t('no data')).join(', ') })}
             >
               {s.trend.map((t, i) => (
                 <div key={t.weekStart} className="trend__col">
@@ -371,22 +378,23 @@ export function InsurerDriver() {
             </div>
           </section>
           <section className="panel">
-            <h2 className="panel__title">What drives the score</h2>
+            <h2 className="panel__title">{t('What drives the score')}</h2>
             <ul className="kpi-list">
               {res.kpis.map((k) => (
                 <li key={k.id} className="kpi-row">
                   <div className="kpi-row__head">
-                    <span className="kpi-row__label">{k.label}</span>
+                    <span className="kpi-row__label">{t(k.label)}</span>
                     <span className="kpi-row__value">
-                      {k.value === null ? '—' : k.value.toFixed(1)} <small>{k.unit}</small>
+                      {k.value === null ? '—' : k.value.toFixed(1)} <small>{t(k.unit)}</small>
                     </span>
                   </div>
                   <div className="bar" aria-hidden="true">
                     <span style={{ width: `${k.subscore ?? 0}%` }} />
                   </div>
                   <p className="kpi-row__meta">
-                    {k.subscore === null ? 'No data' : `${Math.round(k.subscore)}/100`} · weight{' '}
-                    {Math.round(k.weight * 100)}%
+                    {k.subscore === null
+                      ? t('No data')
+                      : t('{score}/100 · weight {w}%', { score: Math.round(k.subscore), w: Math.round(k.weight * 100) })}
                   </p>
                 </li>
               ))}
@@ -395,13 +403,13 @@ export function InsurerDriver() {
         </div>
         <div className="dash__col">
           <section className="panel">
-            <h2 className="panel__title">Profile factors</h2>
+            <h2 className="panel__title">{t('Profile factors')}</h2>
             <ul className="factors-list">
               {s.risk.factors.map((f) => (
                 <li key={f.id} className={f.known ? '' : 'is-unknown'}>
                   <span>
-                    <strong>{f.label}</strong>
-                    <small>{f.known ? f.detail : 'No data'}</small>
+                    <strong>{t(f.label)}</strong>
+                    <small>{f.known ? f.detail : t('No data')}</small>
                   </span>
                   <span className="factors-list__adj">
                     {f.known
@@ -415,17 +423,16 @@ export function InsurerDriver() {
             </ul>
           </section>
           <section className="panel">
-            <h2 className="panel__title">Shared with you</h2>
+            <h2 className="panel__title">{t('Shared with you')}</h2>
             <ul className="checklist">
               <li>
-                Weekly scores, risk band, KPI values and totals ({Math.round(s.report.totals.distanceKm)} km,{' '}
-                {s.report.trips} trips).
+                {t('Weekly scores, risk band, KPI values and totals ({km} km, {trips}).', { km: Math.round(s.report.totals.distanceKm), trips: tn(s.report.trips, '{n} trip', '{n} trips') })}
               </li>
-              <li>Confidence: {res.confidence}.</li>
+              <li>{t('Confidence: {level}.', { level: t(res.confidence) })}</li>
               <li>
-                <strong>Not shared:</strong> individual trips, routes, locations, times of day.
+                <strong>{t('Not shared:')}</strong> {t('individual trips, routes, locations, times of day.')}
               </li>
-              <li>The driver can stop sharing or delete their data at any time; it disappears here immediately.</li>
+              <li>{t('The driver can stop sharing or delete their data at any time; it disappears here immediately.')}</li>
             </ul>
           </section>
         </div>
@@ -435,44 +442,42 @@ export function InsurerDriver() {
 }
 
 export function InsurerData() {
+  const t = useT()
   return (
     <div className="ins-page">
       <div className="ins-page__head">
-        <h1>Data &amp; consent</h1>
-        <p className="muted">How the portal works as the insurer's database of drivers and scores.</p>
+        <h1>{t('Data & consent')}</h1>
+        <p className="muted">{t("How the portal works as the insurer's database of drivers and scores.")}</p>
       </div>
       <div className="dash">
         <section className="panel">
-          <h2 className="panel__title">What you receive</h2>
+          <h2 className="panel__title">{t('What you receive')}</h2>
           <ul className="checklist">
-            <li>Driver identity (verified at sign-up via Smart-ID; demo uses fake Smart-ID) and vehicle plate.</li>
+            <li>{t('Driver identity (verified at sign-up via Smart-ID; demo uses fake Smart-ID) and vehicle plate.')}</li>
             <li>
-              Weekly behaviour score, profile factor and final score, risk band, KPI values, confidence and totals.
+              {t('Weekly behaviour score, profile factor and final score, risk band, KPI values, confidence and totals.')}
             </li>
-            <li>Illustrative OCTA direction (potential discount / no change / possible surcharge), never a price.</li>
-            <li>CSV export of shared summaries for underwriting and renewal systems.</li>
+            <li>{t('Illustrative OCTA direction (potential discount / no change / possible surcharge), never a price.')}</li>
+            <li>{t('CSV export of shared summaries for underwriting and renewal systems.')}</li>
           </ul>
         </section>
         <section className="panel">
-          <h2 className="panel__title">What you never receive</h2>
+          <h2 className="panel__title">{t('What you never receive')}</h2>
           <ul className="checklist">
-            <li>Individual trips, GPS routes, locations or times.</li>
-            <li>Data from drivers who did not opt in, or who withdrew or deleted their data.</li>
+            <li>{t('Individual trips, GPS routes, locations or times.')}</li>
+            <li>{t('Data from drivers who did not opt in, or who withdrew or deleted their data.')}</li>
           </ul>
         </section>
         <section className="panel">
-          <h2 className="panel__title">Architecture</h2>
+          <h2 className="panel__title">{t('Architecture')}</h2>
           <ul className="checklist">
             <li>
-              <strong>Prototype:</strong> the app and this portal share one data store in the browser, so changes show
-              up live.
+              <strong>{t('Prototype:')}</strong> {t('the app and this portal share one data store in the browser, so changes show up live.')}
             </li>
             <li>
-              <strong>Production:</strong> phone apps upload weekly summaries (not trips) to a central EU-hosted
-              database (e.g. Postgres). Each insurer reads only rows of drivers with an active consent for that insurer
-              (row-level security), via this portal or an API.
+              <strong>{t('Production:')}</strong> {t('phone apps upload weekly summaries (not trips) to a central EU-hosted database (e.g. Postgres). Each insurer reads only rows of drivers with an active consent for that insurer (row-level security), via this portal or an API.')}
             </li>
-            <li>Consent is per insurer, logged with time and purpose, and revocable in the app.</li>
+            <li>{t('Consent is per insurer, logged with time and purpose, and revocable in the app.')}</li>
           </ul>
         </section>
       </div>

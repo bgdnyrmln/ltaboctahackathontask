@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { onLiveTrip, type LiveTripMessage } from '../telemetry/liveChannel'
 import { PLACES, ROUTE } from '../telemetry/simulatedDrive'
+import { useT } from '../i18n'
 
 // Real map (OpenStreetMap tiles, no API key) next to the phone. During a trip it
 // works like a navigator: the car glides smoothly between fixes, the camera
@@ -65,6 +66,7 @@ type Run = { line: L.Polyline; pts: L.LatLng[]; state: SpeedState }
 type Motion = { from: L.LatLng; to: L.LatLng; start: number; dur: number; lastArrival: number }
 
 export function LiveTripMap() {
+  const t = useT()
   const stageEl = useRef<HTMLDivElement>(null)
   const rotatorEl = useRef<HTMLDivElement>(null)
   const mapEl = useRef<HTMLDivElement>(null)
@@ -329,11 +331,11 @@ export function LiveTripMap() {
   )
 
   return (
-    <section className="panel ltm" aria-label="Live trip map">
+    <section className="panel ltm" aria-label={t('Live trip map')}>
       <div className="ltm__head">
-        <h2 className="panel__title">Live trip map</h2>
+        <h2 className="panel__title">{t('Live trip map')}</h2>
         <span className={`ltm__status ltm__status--${status}`}>
-          {status === 'live' ? 'Live from the phone' : status === 'done' ? 'Trip finished' : 'Waiting for a trip'}
+          {status === 'live' ? t('Live from the phone') : status === 'done' ? t('Trip finished') : t('Waiting for a trip')}
         </span>
       </div>
 
@@ -344,10 +346,10 @@ export function LiveTripMap() {
 
         {status !== 'live' && (
           <div className="ltm__zoom">
-            <button type="button" aria-label="Zoom in" onClick={() => map.current?.zoomIn()}>
+            <button type="button" aria-label={t('Zoom in')} onClick={() => map.current?.zoomIn()}>
               +
             </button>
-            <button type="button" aria-label="Zoom out" onClick={() => map.current?.zoomOut()}>
+            <button type="button" aria-label={t('Zoom out')} onClick={() => map.current?.zoomOut()}>
               −
             </button>
           </div>
@@ -356,24 +358,24 @@ export function LiveTripMap() {
         {status === 'idle' && (
           <div className="ltm__overlay">
             <p>
-              Tap <strong>Start trip</strong> on the phone. The drive appears here live.
+              {t('Tap')} <strong>{t('Start trip')}</strong> {t('on the phone. The drive appears here live.')}
             </p>
           </div>
         )}
 
         {live && status === 'live' && (
           <div className={`ltm__readout${live.overLimit ? ' is-over' : live.tooSlow ? ' is-slow' : ''}`}>
-            {destination && <p className="ltm__dest">To {destination}</p>}
+            {destination && <p className="ltm__dest">{t('To {name}', { name: destination })}</p>}
             <p className="ltm__speed">
               {Math.round(live.kmh)}
               <small> km/h</small>
             </p>
             <p className="ltm__limit">
-              Limit {live.limitKmh} · {live.limitName ?? 'road-type default'}
+              {t('Limit')} {live.limitKmh} · {live.limitName ?? t('road-type default')}
             </p>
-            {live.tooSlow && <p className="ltm__warn">Well below the limit</p>}
+            {live.tooSlow && <p className="ltm__warn">{t('Well below the limit')}</p>}
             <p className="ltm__limit">
-              {live.distanceKm.toFixed(2)} km · over the limit {overShare}%
+              {live.distanceKm.toFixed(2)} km · {t('over the limit {n}%', { n: overShare })}
             </p>
           </div>
         )}
@@ -383,17 +385,17 @@ export function LiveTripMap() {
             <p className="ltm__summary-title">
               {summary.saved
                 ? destination
-                  ? `Arrived at ${destination} · trip saved`
-                  : 'Trip saved'
-                : 'Trip too short, not saved'}
+                  ? t('Arrived at {name} · trip saved', { name: destination })
+                  : t('Trip saved')
+                : t('Trip too short, not saved')}
             </p>
             <p>
-              {summary.distanceKm.toFixed(1)} km · over the limit {overShare}% · far below it {slowShare}% ·{' '}
-              {summary.harshBrakes} harsh braking · {summary.harshAccels} harsh acceleration
+              {summary.distanceKm.toFixed(1)} km · {t('over the limit {n}%', { n: overShare })} · {t('far below it {n}%', { n: slowShare })} ·{' '}
+              {summary.harshBrakes} {t('harsh braking')} · {summary.harshAccels} {t('harsh acceleration')}
             </p>
             {summary.saved && (
               <Link to="/app" className="btn btn--primary">
-                See updated score
+                {t('See updated score')}
               </Link>
             )}
           </div>
@@ -404,17 +406,17 @@ export function LiveTripMap() {
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
             OpenStreetMap
           </a>{' '}
-          contributors
+          {t('contributors')}
         </p>
       </div>
 
       <div className="ltm__legend">
-        <span className="ltm-key ltm-key--ok">Within limit</span>
-        <span className="ltm-key ltm-key--over">Over limit</span>
-        <span className="ltm-key ltm-key--slow">Far below limit</span>
-        <span className="ltm-key ltm-key--brake">Harsh braking</span>
-        <span className="ltm-key ltm-key--accel">Harsh acceleration</span>
-        <span className="ltm__note">{SPEED_MAP_DEMO_LABEL}. Positions are shown live only, never stored.</span>
+        <span className="ltm-key ltm-key--ok">{t('Within limit')}</span>
+        <span className="ltm-key ltm-key--over">{t('Over limit')}</span>
+        <span className="ltm-key ltm-key--slow">{t('Far below limit')}</span>
+        <span className="ltm-key ltm-key--brake">{t('Harsh braking')}</span>
+        <span className="ltm-key ltm-key--accel">{t('Harsh acceleration')}</span>
+        <span className="ltm__note">{t(SPEED_MAP_DEMO_LABEL)}. {t('Positions are shown live only, never stored.')}</span>
       </div>
     </section>
   )
