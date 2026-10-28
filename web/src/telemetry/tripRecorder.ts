@@ -4,8 +4,10 @@
 import {
   aggregateTrip,
   getSpeedLimitMap,
+  isSlowSpeed,
   PHONE_WINDOW_MS,
   speedingBands,
+  TOO_SLOW_AFTER_MS,
   type SpeedSample,
   type TripSummary,
 } from '@data'
@@ -45,9 +47,7 @@ const RURAL_LIMIT = 90
 const RURAL_AFTER_MS = 60_000
 const MIN_TRIP_KM = 1
 const MIN_TRIP_SEC = 180
-// Driving far below the limit also raises risk (holding up traffic, risky overtakes).
-const TOO_SLOW_SHARE = 0.5 // under half the limit...
-const TOO_SLOW_AFTER_MS = 8000 // ...for at least this long, so normal starts and stops do not count
+// Driving far below the limit also raises risk; the 50% / 8 s rule lives in @data (speeding.ts).
 const MAP_SHARE_FOR_SOURCE = 0.5 // trip is labelled 'map' when most samples had a map limit
 
 function haversineKm(a: GpsFix, b: GpsFix) {
@@ -117,7 +117,7 @@ export class TripRecorder {
     this.limitSource = hit ? 'map' : 'road_type_default'
     this.limitName = hit?.name ?? null
     this.speedKmh = kmh
-    const slow = kmh >= 5 && kmh < this.limit * TOO_SLOW_SHARE
+    const slow = isSlowSpeed(kmh, this.limit)
     this.slowSince = slow ? (this.slowSince ?? fix.t) : null
     const wasSlow = this.tooSlow
     this.tooSlow = this.slowSince !== null && fix.t - this.slowSince >= TOO_SLOW_AFTER_MS

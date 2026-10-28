@@ -2,7 +2,7 @@
 // harsh event = |dv/dt| >= 3 m/s² (events within 3 s merged); speeding counted
 // above limit + tolerance (see trips/speeding.ts); raw samples are discarded afterwards.
 import { rigaParts } from '../time.ts';
-import { speedingBands } from '../trips/speeding.ts';
+import { isSlowSpeed, speedingBands, TOO_SLOW_AFTER_MS } from '../trips/speeding.ts';
 import type { TripSummary } from '../trips/types.ts';
 
 export interface SpeedSample {
@@ -53,6 +53,9 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
   let pct20Ms = 0;
   let pct40Ms = 0;
   let phoneMs = 0;
+  let slowMs = 0;
+  let slowSince: number | null = null;
+  let wasTooSlow = false;
   let brakes = 0;
   let accels = 0;
   let lastBrake = -Infinity;
@@ -65,7 +68,19 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     const prev = valid[i - 1];
     const cur = valid[i];
     const dt = cur.t - prev.t;
-    if (dt <= 0 || dt > MAX_GAP_MS) continue;
+    if (dt <= 0 || dt > MAX_GAP_MS) {
+      slowSince = null; // a gap breaks a too-slow run
+      wasTooSlow = false;
+      continue;
+    }
+
+    // Too slow: same rule as the live recorder; time counts once the run has lasted 8 s.
+    const curLimit = o.limitKmh(cur.t);
+    const slow = curLimit !== null && isSlowSpeed(cur.speedKmh, curLimit);
+    slowSince = slow ? (slowSince ?? cur.t) : null;
+    const tooSlow = slowSince !== null && cur.t - slowSince >= TOO_SLOW_AFTER_MS;
+    if (tooSlow && wasTooSlow) slowMs += dt;
+    wasTooSlow = tooSlow;
 
     const avg = (prev.speedKmh + cur.speedKmh) / 2;
     const km = (avg * dt) / 3_600_000;
@@ -74,9 +89,8 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
 
     if (cur.speedKmh >= MOVING_KMH) {
       drivingMs += dt;
-      const limit = o.limitKmh(cur.t);
-      if (limit !== null) {
-        const b = speedingBands(cur.speedKmh, limit);
+      if (curLimit !== null) {
+        const b = speedingBands(cur.speedKmh, curLimit);
         if (b.overLimit) overMs += dt;
         if (b.over10) over10Ms += dt;
         if (b.over20) over20Ms += dt;
@@ -121,6 +135,7 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     secOverPct20: Math.round(pct20Ms / 1000),
     secOverPct40: Math.round(pct40Ms / 1000),
     secPhoneUse: Math.round(phoneMs / 1000),
+    secTooSlow: Math.min(Math.round(slowMs / 1000), Math.round(drivingMs / 1000)),
     harshBrakeCount: brakes,
     harshAccelCount: accels,
     nightKm: Math.min(Math.round(nightKm * 100) / 100, Math.round(distanceKm * 100) / 100),
