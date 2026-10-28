@@ -62,6 +62,12 @@ export class TripRecorder {
   private rejected = 0
   private readonly startedAt = Date.now()
 
+  // Phone GPS by default; the website's phone simulator records synthetic trips.
+  private readonly source: 'phone' | 'synthetic'
+  constructor(source: 'phone' | 'synthetic' = 'phone') {
+    this.source = source
+  }
+
   add(fix: GpsFix) {
     this.accuracy = fix.accuracy
     if (fix.accuracy > MAX_ACCURACY_M) {
@@ -108,7 +114,7 @@ export class TripRecorder {
       limitKmh: (t) => this.limits.get(t) ?? URBAN_LIMIT,
       speedLimitSource:
         this.speedSamples > 0 && this.mapHits / this.speedSamples >= MAP_SHARE_FOR_SOURCE ? 'map' : 'road_type_default',
-      source: 'phone',
+      source: this.source,
       expectedHz: 1,
     })
   }
@@ -116,7 +122,10 @@ export class TripRecorder {
   stats(): LiveStats {
     const summary = this.aggregate('live', null)
     return {
-      elapsedSec: (Date.now() - this.startedAt) / 1000,
+      elapsedSec:
+        this.samples.length > 1
+          ? (this.samples[this.samples.length - 1].t - this.samples[0].t) / 1000
+          : (Date.now() - this.startedAt) / 1000,
       distanceKm: summary?.distanceKm ?? 0,
       speedKmh: this.speedKmh,
       limitKmh: this.limit,

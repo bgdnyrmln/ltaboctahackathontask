@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { useDriverData } from '../../demo/useDriverData'
-import { isNativeMobileApp } from '../../telemetry/platform'
+import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
+import { SIMULATION_SPEEDUP } from '../../telemetry/simulatedDrive'
 import { MIN_TRIP } from '../../telemetry/tripRecorder'
 import { useTripRecording } from '../../telemetry/useTripRecording'
 
@@ -16,13 +17,14 @@ const mmss = (sec: number) => {
 export function Drive() {
   const { state } = useAuth()
   const { addTrip, recordDemoObdTrip } = useDriverData()
-  const { status, stats, error, start, stop } = useTripRecording()
+  const { status, stats, error, routeDone, start, stop } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
   const [obdBusy, setObdBusy] = useState(false)
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
 
-  const canRecord = isNativeMobileApp()
+  const canRecord = canRecordTrips()
+  const simulator = isPhoneSimulator()
   const driverId = state.profile.driver.id
   const vehicleId = state.profile.vehicles[0]?.id ?? null
   const active = status === 'recording' || status === 'requesting'
@@ -54,7 +56,13 @@ export function Drive() {
         <section className="panel live" aria-live="polite">
           <p className="live__status">
             <span className="live__dot" aria-hidden="true" />
-            {status === 'requesting' ? 'Waiting for GPS…' : 'Recording'}
+            {status === 'requesting'
+              ? 'Waiting for GPS…'
+              : routeDone
+                ? 'Route finished'
+                : simulator
+                  ? `Simulated drive · ${SIMULATION_SPEEDUP}× speed`
+                  : 'Recording'}
           </p>
           <p className={`live__speed${stats?.overLimit ? ' is-over' : ''}`}>
             {Math.round(stats?.speedKmh ?? 0)}
@@ -102,6 +110,13 @@ export function Drive() {
 
       {canRecord ? (
         <section className="panel drive-intro">
+          {simulator && (
+            <p className="form-note">
+              Phone simulator: no real GPS here, so <strong>Start trip</strong> plays a scripted drive through Riga (Old
+              Riga, Krasta iela, city streets). It is saved as a synthetic trip and appears in the web account next to
+              this phone straight away.
+            </p>
+          )}
           <p>
             Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
             above the limit, harsh braking and harsh acceleration.
