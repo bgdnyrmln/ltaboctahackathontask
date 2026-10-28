@@ -1,7 +1,7 @@
 import { DEMO_LABEL, type DemoIdentityOption, type SignInError } from '@data'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { identityProvider, nextStepPath, useAuth } from '../auth/AuthContext'
+import { api, nextStepPath, useAuth } from '../auth/AuthContext'
 import { AppShell, Stepper } from '../components/AppShell'
 import './App.css'
 
@@ -27,16 +27,16 @@ export function Login() {
   const cancelled = useRef(false)
 
   useEffect(() => {
-    identityProvider.listDemoIdentities().then((list) => {
+    api.listDemoProfiles().then((list) => {
       setOptions(list)
       setSelected((current) => current || list[0]?.demoId || '')
     })
   }, [])
 
-  // Already signed in: continue where registration stopped.
+  // Signed in (already, or after the fake confirmation): continue where registration stopped.
   useEffect(() => {
-    if (state.status === 'signedIn' && step.kind === 'choose') navigate(nextStepPath(state.session), { replace: true })
-  }, [state, step.kind, navigate])
+    if (state.status === 'signedIn') navigate(nextStepPath(state.registration), { replace: true })
+  }, [state, navigate])
 
   const start = (e: FormEvent) => {
     e.preventDefault()
@@ -54,10 +54,7 @@ export function Login() {
       if (cancelled.current) return
       const result = await signIn(demoId)
       if (cancelled.current) return
-      if (result.ok) {
-        const session = { demoId, ...readExisting(demoId) }
-        navigate(nextStepPath(session), { replace: true })
-      } else {
+      if (!result.ok) {
         setError(result.error)
         setTyped('')
         setStep({ kind: 'choose' })
@@ -151,14 +148,4 @@ export function Login() {
       </div>
     </AppShell>
   )
-}
-
-// Signing in again keeps earlier registration progress for the same demo profile.
-function readExisting(demoId: string) {
-  try {
-    const stored = JSON.parse(localStorage.getItem('foc.session') ?? 'null')
-    return stored?.demoId === demoId ? stored : {}
-  } catch {
-    return {}
-  }
 }

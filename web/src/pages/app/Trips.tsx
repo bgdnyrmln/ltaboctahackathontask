@@ -16,7 +16,7 @@ export function Trips() {
   const savedId = (location.state as { saved?: string } | null)?.saved
   if (loading) return <p className="muted">Loading…</p>
 
-  const list = [...trips].reverse()
+  const list = trips
 
   return (
     <div className="app-page">

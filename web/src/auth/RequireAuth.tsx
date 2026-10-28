@@ -27,7 +27,7 @@ export function RequireAuth({ stage, children }: { stage: Stage; children: React
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  const expected = nextStepPath(state.session)
+  const expected = nextStepPath(state.registration)
   if (stage === 'app' ? expected !== '/app' : expected !== stagePath[stage]) {
     // Allow going back from profile to consent; otherwise send to the current step.
     if (!(stage === 'consent' && expected === '/register/profile')) {

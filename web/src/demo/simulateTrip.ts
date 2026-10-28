@@ -1,4 +1,4 @@
-import type { TripSummary } from '@trips'
+import type { TripSummary } from '@data'
 
 // One synthetic trip "just driven", for demos without a car or GPS. Labelled synthetic.
 export function simulateTrip(driverId: string, vehicleId: string | null, style: 'calm' | 'rushed'): TripSummary {

@@ -36,6 +36,7 @@ export interface OctaApi {
   getWeeklyReport(weekStart?: string): Promise<WeeklyReport>;
   getTrend(weeks?: number): Promise<TrendPoint[]>;
   listTrips(weekStart?: string): Promise<TripSummary[]>;
+  saveTrip(trip: TripSummary): Promise<void>; // trips recorded on the phone (Agent B)
   deleteMyData(): Promise<{ tripsDeleted: number }>;
   resetDemo(): Promise<void>;
   recordDemoObdTrip(): Promise<TripSummary>; // simulated dongle, see OBD_DEMO_LABEL
@@ -155,6 +156,14 @@ export function createApi(options: ApiOptions = {}): OctaApi {
       const { driver } = await requireProfile();
       await ensureSeeded();
       return trips.list({ driverId: driver.id, ...weekRange(weekStart) });
+    },
+
+    // Added by Agent B for the Drive screen: validates via the repository and persists.
+    async saveTrip(trip) {
+      const { driver } = await requireProfile();
+      if (trip.driverId !== driver.id) throw new Error('Trip belongs to another driver');
+      await ensureSeeded();
+      await trips.save([trip]);
     },
 
     async deleteMyData() {
