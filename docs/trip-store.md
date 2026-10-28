@@ -54,7 +54,7 @@ Both pass the same contract tests.
 ## Run checks
 
 ```sh
-node --test src/data/trips/tripStore.test.ts
+cd web && npm test
 ```
 
 ## Open questions for A and D

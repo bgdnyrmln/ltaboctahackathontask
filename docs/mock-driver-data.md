@@ -29,14 +29,14 @@ Consumers (UI, scoring) depend only on the interfaces and the `Profile` type, so
 
 ## Files
 
-`src/data/types.ts`, `seed.ts`, `registry.ts`, `demoAuth.ts`, `index.ts`, `demoAuth.test.ts`.
+`web/src/data/types.ts`, `seed.ts`, `registry.ts`, `demoAuth.ts`, `index.ts`, `demoAuth.test.ts`.
 
 ## Run checks
 
 Node 22.18 or newer (type stripping, tested on Node 24), no dependencies:
 
 ```sh
-node --test src/data/demoAuth.test.ts
+cd web && npm test
 ```
 
-The platform (Expo) is not set up yet; when it is, move these files to the app's source layout and wire the same test into its runner.
+The code lives in the web PWA (`web/`); tests run with Node, the app build excludes `*.test.ts`.
