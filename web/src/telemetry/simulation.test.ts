@@ -5,22 +5,12 @@ import { fixesForRun, runLengthSec, SIM_TRIPS } from './simulatedDrive.ts';
 
 const NOW = Date.parse('2026-10-28T14:00:00Z');
 
-test('a run starts at the press and advances one simulated second per fix, at any speed', () => {
+test('a run starts at the press and advances one simulated second per fix', () => {
   for (const trip of SIM_TRIPS) {
-    for (const speed of [1, 12] as const) {
-      const fixes = fixesForRun(trip.id, speed, NOW);
-      assert.equal(fixes[0].t, NOW, `${trip.id} ${speed}x`);
-      for (let i = 1; i < fixes.length; i++) assert.equal(fixes[i].t - fixes[i - 1].t, 1000);
-      assert.equal(fixes.length, runLengthSec(trip.id));
-    }
-  }
-});
-
-test('speed only changes the delivery pace, not the trip', () => {
-  for (const trip of SIM_TRIPS) {
-    const real = fixesForRun(trip.id, 1, NOW);
-    const fast = fixesForRun(trip.id, 12, NOW);
-    assert.deepEqual(real, fast);
+    const fixes = fixesForRun(trip.id, NOW);
+    assert.equal(fixes[0].t, NOW, trip.id);
+    for (let i = 1; i < fixes.length; i++) assert.equal(fixes[i].t - fixes[i - 1].t, 1000);
+    assert.equal(fixes.length, runLengthSec(trip.id));
   }
 });
 

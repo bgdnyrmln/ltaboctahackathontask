@@ -362,10 +362,8 @@ function fitToRoute(steps: Step[], km: number): number[] {
   return profileFrom([...steps.slice(0, -1), ['hold', cruise, extraSec], last])
 }
 
-// 12x by default for quick demos; the simulated clock follows the same speed. 1x is real time.
-export const SIMULATION_SPEEDS = [1, 12] as const
-export type SimulationSpeed = (typeof SIMULATION_SPEEDS)[number]
-export const DEFAULT_SIMULATION_SPEED: SimulationSpeed = 12
+// The demo always runs 12x; the simulated clock (simClock.ts) follows the same speed.
+export const SIMULATION_SPEED = 12
 
 let lastPicked: SimTripId | null = null
 
@@ -400,7 +398,7 @@ export const runLengthSec = (tripId: SimTripId) => simulatedFixes(tripId, 0).len
 // The fixes of one run. The trip starts at the moment of the press and the simulated clock advances one
 // second per fix, so minutes, the trip's start and end and the phone clock (see simClock.ts) agree at any
 // speed. At 12x the whole trip is delivered in a twelfth of its length.
-export function fixesForRun(tripId: SimTripId, _speed: SimulationSpeed, now = Date.now()): GpsFix[] {
+export function fixesForRun(tripId: SimTripId, now = Date.now()): GpsFix[] {
   return simulatedFixes(tripId, now + runLengthSec(tripId) * 1000)
 }
 
@@ -409,9 +407,9 @@ export function startSimulatedDrive(
   tripId: SimTripId,
   onFix: (fix: GpsFix) => void,
   onDone: () => void,
-  speed: SimulationSpeed = DEFAULT_SIMULATION_SPEED,
+  speed: number = SIMULATION_SPEED,
 ): () => void {
-  const fixes = fixesForRun(tripId, speed)
+  const fixes = fixesForRun(tripId)
   let i = 0
   const timer = setInterval(() => {
     if (i >= fixes.length) {
