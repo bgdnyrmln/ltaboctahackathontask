@@ -47,6 +47,12 @@ export function AppLayout() {
               {tab.label}
             </NavLink>
           ))}
+          <a href="/demo" target="_top" className="tabbar__link tabbar__extra">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="7" y="3" width="10" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            Phone simulator
+          </a>
         </nav>
       </div>
     </DriverDataProvider>

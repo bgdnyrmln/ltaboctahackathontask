@@ -8,6 +8,7 @@ import { Home } from './pages/app/Home'
 import { ProfileTab } from './pages/app/ProfileTab'
 import { Trips } from './pages/app/Trips'
 import { Landing } from './pages/Landing'
+import { LiveDemo } from './pages/LiveDemo'
 import { Login } from './pages/Login'
 import { RegisterConsent } from './pages/RegisterConsent'
 import { RegisterProfile } from './pages/RegisterProfile'
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
       </Route>
       <Route path="/login" element={<Login />} />
+      <Route path="/demo" element={<LiveDemo />} />
       <Route
         path="/register/consent"
         element={

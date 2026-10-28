@@ -21,7 +21,7 @@ export const hero = {
   ],
   lead: 'Fake OCTA Coach turns everyday trips into a transparent driving score, one practical tip a week, and an illustrative OCTA estimate.',
   primaryCta: { label: 'Try the demo app', href: '/login' },
-  secondaryCta: { label: 'How it works', href: '#how-it-works' },
+  secondaryCta: { label: 'Phone + web live demo', href: '/demo' },
 }
 
 export type Kpi = {

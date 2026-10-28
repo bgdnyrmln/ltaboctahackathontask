@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { createApi, dScore, type Profile, type SignInResult } from '@data'
+import type { Profile, SignInResult } from '@data'
+import { appApi, onSharedDataChange } from './appApi'
 
-// Agent C's API owns the demo session and data; scoring is Agent D's dScore (plugged in
-// via scoreFn as the API docs describe). This context adds registration progress.
-export const api = createApi({ scoreFn: dScore })
+// Agent C's API (see appApi) owns the session and data; this context adds
+// registration progress and follows changes made in other windows or the phone frame.
 
 const registrationKey = (driverId: string) => `foc.registration.${driverId}`
 
@@ -47,13 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading' })
 
   useEffect(() => {
-    api.getSession().then((profile) => {
-      setState(
-        profile
-          ? { status: 'signedIn', profile, registration: readRegistration(profile.driver.id) }
-          : { status: 'signedOut' },
-      )
-    })
+    const load = () =>
+      appApi()
+        .getSession()
+        .then((profile) => {
+          setState(
+            profile
+              ? { status: 'signedIn', profile, registration: readRegistration(profile.driver.id) }
+              : { status: 'signedOut' },
+          )
+        })
+    load()
+    return onSharedDataChange(load)
   }, [])
 
   const updateRegistration = useCallback((patch: Partial<Registration>) => {
@@ -69,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       async signIn(demoId) {
-        const result = await api.signIn(demoId)
+        const result = await appApi().signIn(demoId)
         if (result.ok) {
           setState({
             status: 'signedIn',
@@ -86,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateRegistration({ registeredAt: new Date().toISOString() })
       },
       async signOut() {
-        await api.signOut()
+        await appApi().signOut()
         setState({ status: 'signedOut' })
       },
       // After deleteMyData the API has already ended the session.

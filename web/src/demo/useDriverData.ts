@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { recentWeeks, type TrendPoint, type TripSummary, type WeeklyReport } from '@data'
-import { api } from '../auth/AuthContext'
+import { appApi, onSharedDataChange } from '../auth/appApi'
 
 const TREND_WEEKS = 4
 const TRIP_WEEKS = 4
@@ -36,9 +36,9 @@ export function DriverDataProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     const weeks = recentWeeks(new Date(), TRIP_WEEKS)
     const [nextReport, nextTrend, perWeek] = await Promise.all([
-      api.getWeeklyReport(),
-      api.getTrend(TREND_WEEKS),
-      Promise.all(weeks.map((w) => api.listTrips(w))),
+      appApi().getWeeklyReport(),
+      appApi().getTrend(TREND_WEEKS),
+      Promise.all(weeks.map((w) => appApi().listTrips(w))),
     ])
     setReport(nextReport)
     setTrend(nextTrend)
@@ -47,6 +47,12 @@ export function DriverDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     reload()
+    // Trips saved in another window or the phone frame show up here without a reload.
+    return onSharedDataChange(() => {
+      reload().catch(() => {
+        // Signed out elsewhere: AuthProvider redirects to login.
+      })
+    })
   }, [reload])
 
   const value = useMemo<DriverData>(
@@ -56,20 +62,20 @@ export function DriverDataProvider({ children }: { children: ReactNode }) {
       trend,
       trips,
       async addTrip(trip) {
-        await api.saveTrip(trip)
+        await appApi().saveTrip(trip)
         await reload()
       },
       async recordDemoObdTrip() {
-        const trip = await api.recordDemoObdTrip()
+        const trip = await appApi().recordDemoObdTrip()
         await reload()
         return trip
       },
       async deleteMyData() {
-        const { tripsDeleted } = await api.deleteMyData()
+        const { tripsDeleted } = await appApi().deleteMyData()
         return tripsDeleted
       },
       async resetDemo() {
-        await api.resetDemo()
+        await appApi().resetDemo()
         await reload()
       },
     }),
