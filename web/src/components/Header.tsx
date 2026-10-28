@@ -23,7 +23,7 @@ export function Header() {
     if (!menuOpen) return
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
-    const desktop = window.matchMedia('(min-width: 1200px)')
+    const desktop = window.matchMedia('(min-width: 1440px)')
     const onDesktop = () => desktop.matches && setMenuOpen(false)
     window.addEventListener('keydown', onKey)
     desktop.addEventListener('change', onDesktop)

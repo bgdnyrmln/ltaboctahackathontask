@@ -227,8 +227,9 @@
   }
 }
 
-/* Full header nav needs ~1200 px; below that the header uses the Menu button. */
-@media (min-width: 1200px) {
+/* Full header nav needs ~1440 px with the longer Latvian labels and the language switch; below that
+   the header uses the Menu button. */
+@media (min-width: 1440px) {
   .site-nav {
     display: block;
     margin-left: auto;

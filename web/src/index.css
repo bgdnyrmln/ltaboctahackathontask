@@ -215,3 +215,11 @@ svg {
 .ins-login__top .lang-switch {
   align-self: flex-start;
 }
+
+/* The header logo never shrinks: squeezed, it broke into four lines and was cut off at the top. */
+.site-header__logo {
+  flex: none;
+}
+.site-header__logo .logo__text {
+  white-space: nowrap;
+}
