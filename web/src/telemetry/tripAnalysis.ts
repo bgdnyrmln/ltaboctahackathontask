@@ -191,6 +191,8 @@ export function illustrativeRoute(
   place('accel', trip.harshAccelCount)
 
   const from = reverse ? pick.to : pick.from
-  const to = path.length > base.length ? from : reverse ? pick.from : pick.to
+  // Longer trips run there and back on the route, so they are labelled as a round trip.
+  const roundTrip = path.length > base.length
+  const to = roundTrip ? `${from} (round trip)` : reverse ? pick.from : pick.to
   return { points, events, from, to }
 }

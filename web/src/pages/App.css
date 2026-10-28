@@ -1138,7 +1138,7 @@
 }
 
 .ltm__stage {
-  height: clamp(320px, calc(100dvh - 260px), 680px);
+  height: clamp(300px, calc(100dvh - 300px), 680px);
 }
 
 /* Oversized square that turns with the car (sized in JS to the stage diagonal) */
@@ -1948,9 +1948,8 @@
 
 /* Final score with D's profile factor */
 .final-score {
-  display: grid;
-  gap: 2px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .final-score strong {
@@ -1959,6 +1958,7 @@
 }
 
 .final-score small {
+  display: block;
   font-size: 11px;
   color: var(--color-text-muted);
 }
@@ -2136,5 +2136,92 @@
 @media (max-width: 420px) {
   .trip__thumb {
     width: 84px;
+  }
+}
+
+
+/* ---------- Fit common laptop screens at 100% zoom ---------- */
+@media (min-width: 992px) {
+  .trip-list {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+}
+
+.trip__head {
+  align-items: flex-start;
+}
+
+.trip__head .source {
+  flex: none;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* Short screens (e.g. 1366x657 or 1440x789 laptops): tighter vertical rhythm */
+@media (max-height: 800px) {
+  .app-main {
+    padding: 16px 0 32px;
+  }
+
+  .stepper {
+    margin-bottom: 14px;
+  }
+
+  .auth-card {
+    gap: 14px;
+    padding: 20px 24px;
+  }
+
+  .auth-card__title {
+    font-size: 22px;
+  }
+
+  .profile-option,
+  .consent {
+    padding: 9px 14px;
+  }
+
+  .auth-form {
+    gap: 14px;
+  }
+
+  .sid-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .score-ring {
+    width: 160px;
+  }
+
+  .score-ring__number {
+    font-size: 46px;
+  }
+
+  .mobile-app__content {
+    padding-top: 20px;
+  }
+
+  .app-page {
+    gap: 12px;
+  }
+
+  .app-page__title {
+    font-size: 26px;
+  }
+
+  .panel {
+    padding: 20px;
+  }
+}
+
+/* Wide monitors (e.g. 1920 px at 100%): use the width instead of a narrow column */
+@media (min-width: 1600px) {
+  .mobile-app__content {
+    max-width: 1520px;
+  }
+
+  .trip-map__leaflet {
+    height: 460px;
   }
 }
