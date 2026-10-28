@@ -27,12 +27,15 @@ const COUNTERS = [
   'nightKm',
 ] as const;
 
-type AddedLater = 'secOverPct10' | 'secOverPct20' | 'secOverPct40' | 'secPhoneUse';
+type AddedLater = 'secOverPct10' | 'secOverPct20' | 'secOverPct40' | 'secPhoneUse' | 'secTooSlow';
 
 // Trips stored before these counters existed load with them as 0.
 export function upgradeTrip(trip: Omit<TripSummary, AddedLater> & Partial<TripSummary>): TripSummary {
-  return { secOverPct10: 0, secOverPct20: 0, secOverPct40: 0, secPhoneUse: 0, ...trip };
+  return { secOverPct10: 0, secOverPct20: 0, secOverPct40: 0, secPhoneUse: 0, secTooSlow: 0, ...trip };
 }
+
+// Optional counters: checked only when present.
+const OPTIONAL_SECONDS = ['secPhoneUse', 'secTooSlow'] as const;
 
 const INTEGER_COUNTERS = new Set(['harshBrakeCount', 'harshAccelCount']);
 
@@ -80,12 +83,13 @@ export function validateTrip(trip: TripSummary): void {
     if (trip.secOverLimit > trip.drivingSec) {
       problems.push('secOverLimit exceeds drivingSec');
     }
-    const phone = trip.secPhoneUse;
-    if (phone !== undefined) {
-      if (typeof phone !== 'number' || !Number.isFinite(phone) || phone < 0) {
-        problems.push('secPhoneUse must be a non-negative number');
-      } else if (phone > trip.drivingSec) {
-        problems.push('secPhoneUse exceeds drivingSec');
+    for (const key of OPTIONAL_SECONDS) {
+      const v = trip[key];
+      if (v === undefined) continue;
+      if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
+        problems.push(`${key} must be a non-negative number`);
+      } else if (v > trip.drivingSec) {
+        problems.push(`${key} exceeds drivingSec`);
       }
     }
     if (trip.nightKm > trip.distanceKm) problems.push('nightKm exceeds distanceKm');
@@ -126,6 +130,7 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
     secOverPct20: 0,
     secOverPct40: 0,
     secPhoneUse: 0,
+    secTooSlow: 0,
     harshBrakeCount: 0,
     harshAccelCount: 0,
     nightKm: 0,
@@ -136,6 +141,7 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
   for (const t of trips) {
     for (const key of COUNTERS) totals[key] += t[key];
     totals.secPhoneUse = (totals.secPhoneUse ?? 0) + (t.secPhoneUse ?? 0);
+    totals.secTooSlow = (totals.secTooSlow ?? 0) + (t.secTooSlow ?? 0);
     totals.maxContinuousMin = Math.max(totals.maxContinuousMin, t.maxContinuousMin);
     weightedCoverage += t.coverage * t.distanceKm;
   }

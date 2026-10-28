@@ -99,3 +99,15 @@ test('synthetic phone use follows the driver profile', () => {
   assert.ok(share('drv-002') > 0.02 && share('drv-002') < 0.08, `Janis ${share('drv-002')}`);
   assert.equal(share('drv-003'), 0);
 });
+
+test('synthetic too-slow time follows the driver profile and fits in driving time', () => {
+  const trips = generateDemoTrips(WEEKS, NOW);
+  for (const t of trips) assert.ok((t.secTooSlow ?? 0) + t.secOverLimit <= t.drivingSec, t.id);
+  const share = (id: string) => {
+    const t = sumTrips(trips.filter((x) => x.driverId === id));
+    return (t.secTooSlow ?? 0) / t.drivingSec;
+  };
+  assert.ok(share('drv-001') > 0.01 && share('drv-001') < 0.03, `Anna ${share('drv-001')}`);
+  assert.ok(share('drv-002') > 0.005 && share('drv-002') < 0.03, `Janis ${share('drv-002')}`);
+  assert.equal(share('drv-003'), 0);
+});

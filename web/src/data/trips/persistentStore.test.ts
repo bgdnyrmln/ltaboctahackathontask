@@ -20,6 +20,7 @@ const trip = (id: string, driverId = 'drv-001'): TripSummary => ({
   secOverPct20: 5,
   secOverPct40: 0,
   secPhoneUse: 0,
+  secTooSlow: 0,
   harshBrakeCount: 2,
   harshAccelCount: 1,
   nightKm: 0,
@@ -74,4 +75,5 @@ test('a snapshot from before the relative speeding bands is upgraded, not discar
   const loaded = await repo.get('phone-old');
   assert.equal(loaded?.secOverPct10, 0);
   assert.equal(loaded?.secOverPct40, 0);
+  assert.equal(loaded?.secTooSlow, 0);
 });

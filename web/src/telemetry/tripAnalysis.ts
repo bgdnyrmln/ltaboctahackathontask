@@ -1,4 +1,4 @@
-import { getSpeedLimitMap, HARSH_MS2, speedingBands } from '@data'
+import { getSpeedLimitMap, HARSH_MS2, isSlowSpeed, speedingBands, TOO_SLOW_AFTER_MS } from '@data'
 import { simulatedFixes, SIM_TRIPS, type SimTripId } from './simulatedDrive'
 
 // Routes are never stored for real trips. Simulated trips are scripted, so their
@@ -28,8 +28,6 @@ export type SpeedState = 'ok' | 'over' | 'slow'
 export type RoutePoint = { lat: number; lon: number; t: number; kmh: number; limit: number; state: SpeedState }
 export type RouteEvent = { lat: number; lon: number; kind: 'brake' | 'accel'; t: number }
 
-const TOO_SLOW_SHARE = 0.5
-const TOO_SLOW_AFTER_MS = 8000
 const MERGE_MS = 3000
 
 // Rebuild a simulated trip's route between its start and end, with the same
@@ -48,7 +46,7 @@ export function analyzeSimTrip(simTripId: SimTripId, startedAt: string, endedAt:
   fixes.forEach((f, i) => {
     const kmh = (f.speed ?? 0) * 3.6
     const limit = limits.lookup(f.lat, f.lon)?.limitKmh ?? 50
-    const slow = kmh >= 5 && kmh < limit * TOO_SLOW_SHARE
+    const slow = isSlowSpeed(kmh, limit)
     slowSince = slow ? (slowSince ?? f.t) : null
     const tooSlow = slowSince !== null && f.t - slowSince >= TOO_SLOW_AFTER_MS
     const state: SpeedState = speedingBands(kmh, limit).overLimit ? 'over' : tooSlow ? 'slow' : 'ok'

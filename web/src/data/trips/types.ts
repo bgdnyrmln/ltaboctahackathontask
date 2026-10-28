@@ -22,6 +22,9 @@ export interface TripSummary {
   // only, no content). Optional so older producers still type-check; C's
   // generator, aggregator and stores always fill it (0 when unknown).
   secPhoneUse?: number;
+  // Seconds moving at under 50% of the limit in runs of at least 8 s (see
+  // speeding.ts). Optional like secPhoneUse; C's producers always fill it.
+  secTooSlow?: number;
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number; // 23:00-05:00
@@ -49,6 +52,7 @@ export interface TripTotals {
   secOverPct20: number;
   secOverPct40: number;
   secPhoneUse?: number; // always set by sumTrips; D's dScore adds the phone KPI when present
+  secTooSlow?: number; // always set by sumTrips; D's dScore adds the slow KPI when present
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number;

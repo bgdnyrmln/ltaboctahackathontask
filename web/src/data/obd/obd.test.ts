@@ -92,3 +92,14 @@ test('phone use counts only moving time above 10 km/h inside the activity window
   assert.equal(trip.secPhoneUse, 6); // 20..25 s at 40 km/h; the tap at 8 km/h does not count
   assert.equal(aggregateTrip(base).secPhoneUse, 0); // OBD and other sources that cannot know
 });
+
+test('too slow counts only runs under half the limit that last at least 8 s', () => {
+  // limit 50: 20 km/h is too slow, 30 km/h is not. Runs: 5 s (too short), then 20 s.
+  const speeds = [30, ...Array(5).fill(20), ...Array(5).fill(30), ...Array(20).fill(20), 30]; // t = 0..31 s
+  const base = { id: 's', driverId: 'drv-001', vehicleId: null, samples: samples(speeds), limitKmh: () => 50,
+    speedLimitSource: 'road_type_default' as const, source: 'phone' as const };
+  const trip = aggregateTrip(base);
+  assert.equal(trip.secTooSlow, 11); // run starts at 11 s, too slow from 19 s, counted 19..30 s
+  assert.equal(aggregateTrip({ ...base, limitKmh: () => null }).secTooSlow, 0); // unknown limit: never too slow
+  assert.equal(aggregateTrip({ ...base, samples: samples(Array(30).fill(3)) }).secTooSlow, 0); // standing still
+});
