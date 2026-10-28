@@ -70,3 +70,21 @@ test('profiles differ the way the demo story needs', () => {
   assert.ok(trips.some((t) => t.driverId === 'drv-002' && t.nightKm > 0 && t.maxContinuousMin > 120));
   assert.ok(Object.keys(DEMO_PROFILES).every((id) => trips.some((t) => t.driverId === id)));
 });
+
+test('mid-week, the current week already shows a normal amount of driving', () => {
+  const now = new Date('2026-10-28T14:00:00Z'); // Wednesday afternoon in Riga
+  const trips = generateDemoTrips(['2026-10-26'], now);
+  const km = (id: string) => sumTrips(trips.filter((t) => t.driverId === id)).distanceKm;
+  assert.ok(km('drv-001') >= 100, `Anna ${km('drv-001')} km`);
+  assert.ok(km('drv-002') >= 100, `Janis ${km('drv-002')} km`);
+  assert.ok(km('drv-003') < 30); // the sparse driver stays sparse
+  assert.ok(trips.every((t) => Date.parse(t.endedAt) <= now.getTime())); // no trip still in progress
+});
+
+test('past weeks do not depend on when the demo runs', () => {
+  const past = ['2026-10-12', '2026-10-19'];
+  assert.deepEqual(
+    generateDemoTrips(past, new Date('2026-10-26T06:00:00Z')),
+    generateDemoTrips(past, new Date('2026-10-30T12:00:00Z')),
+  );
+});
