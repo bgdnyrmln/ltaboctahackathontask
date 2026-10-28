@@ -23,6 +23,15 @@ This repository is a planning scaffold. App implementation has not started. The 
 - Before editing, confirm task ownership and branch in Notion. Keep one implementation task per agent and avoid overlapping files.
 - Push small, scoped commits to your branch and open a PR to `main` with the Notion task link, acceptance evidence, and check results. A different agent reviews. Do not merge or deploy without coordinator authorization.
 
+## Team roles
+
+- **A:** coordination, product decisions, and integration.
+- **B:** mobile frontend and UI.
+- **C:** app data, persistence, and approved backend integration.
+- **D:** telematics KPIs, scoring, sample data, and QA.
+
+These are default lanes. Agent A confirms each person’s strengths and records task-level ownership in Notion; roles alone do not authorize coding.
+
 ## Proposed stack
 
 See [TECH-STACK.md](TECH-STACK.md) for the recommended prototype stack and its limits. It is a proposal for the team to approve before implementation; the repository remains a planning scaffold until the MVP, KPIs, score/price framing, and platform are agreed.

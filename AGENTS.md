@@ -39,3 +39,12 @@ Use task-specific branches if coordinator assigns multiple tasks over time. Put 
 ## Coordination
 
 Use Notion as the shared record. Record plan, decisions, changed files, checks, blocker, and handoff on the task. Notion updates do not wake inactive agents; use a verified scheduler or manual check. Never put secrets in the repository or Notion.
+
+### Default team roles
+
+- **Agent A — Coordinator and integration:** decomposes requests, assigns/releases tasks, aligns interfaces, coordinates integration/review, and owns the demo narrative. A does not take another agent's task.
+- **Agent B — Frontend:** owns Expo/React Native screens, navigation, UI state, accessibility, and visual polish against the agreed data contracts.
+- **Agent C — Backend and app data:** owns TypeScript data models, local persistence, and any API/backend adapter the approved MVP needs. Do not add a server if the demo works locally.
+- **Agent D — Telematics, KPIs, and QA:** owns sample-trip fixtures, KPI/score calculations, data confidence, and focused domain tests. Live sensor capture stays out until approved and tested.
+
+Roles are default responsibility areas, not task assignments. Agent A records each concrete owner and branch in Notion after the teammate joins and confirms strengths. Keep shared interfaces explicit to prevent overlap between C's storage models and D's scoring logic.
