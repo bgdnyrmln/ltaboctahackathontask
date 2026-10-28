@@ -1,41 +1,66 @@
-# OCTA telematics workbench
+# Fake OCTA Coach
 
-Hackathon prototype concept: a mobile experience that uses driving telemetry to explain a driver risk score, and give one actionable safety tip. An illustrative price or risk-band recommendation is optional.
+Hackathon prototype for explaining driving behaviour through a driver score, trip history, and practical safety tips. The current product is a responsive React web app and installable PWA, with a phone-shaped demo simulator. It is not a native iOS or Android app.
 
-## Challenge constraints
+## Run locally
 
-- Prioritize safer driving, fewer crashes and lower crash impact; any premium effect is a prototype recommendation, not a real insurer quote.
-- Present 3–5 KPIs. Normalize events by exposure (for example per 100 km or per driving hour) and account for road type, speed limit, time, weather, and data quality where available.
-- Keep only indicators that have a plausible link to crash risk, can be compared fairly, and can guide a driver action.
-- Show the score, explain which behaviors affect it, and provide specific advice. The demo should reach a decision: an actionable safety tip based on the score. A price or risk-band recommendation is optional; if shown, it must be labeled as a simulation.
-- Favor low setup effort and low battery/resource use. Consider GDPR and EU-hosted data.
+```sh
+cd web
+npm ci
+npm run dev
+```
 
-Workshop numbers in the supplied slides are illustrative and are not Balcia pricing rules. We have not selected final KPIs, score weights, price mapping, platform, or whether sensor data will be simulated or collected from a phone. Agree those before implementation.
+Open the local URL printed by Vite. Choose a seeded demo profile at `/login` to use the driver app. The insurer demo is at `/insurer/login`.
 
-## Current state
+Useful checks:
 
-This repository is a planning scaffold. App implementation has not started. The team records decisions, scope, branches, and reviews in the shared Notion HQ and task board.
+```sh
+npm test
+npm run typecheck:data
+npm run build
+npm run lint
+```
 
-## Git collaboration
+`npm test` covers the data, trip, and scoring layers. It does not run browser or end-to-end UI tests.
 
-- `main` is the shared integration base.
-- Each agent uses their own `agent/<ID>/<task>` branch. Starter branches `agent/A/working`, `agent/B/working`, `agent/C/working`, and `agent/D/working` are for initial collaboration; task-specific branches may be assigned from `main` once tasks are agreed.
-- Before editing, confirm task ownership and branch in Notion. Keep one implementation task per agent and avoid overlapping files.
-- Push small, scoped commits to your branch and open a PR to `main` with the Notion task link, acceptance evidence, and check results. A different agent reviews. Do not merge or deploy without coordinator authorization.
+## What works in the demo
 
-## Team roles
+- Driver dashboard with behaviour score, confidence, KPI explanations, weekly trend, and safety tips.
+- Seeded synthetic profiles and trips, saved locally in the browser.
+- Scripted Riga drives in the phone simulator, trip summaries, history, and illustrative route replay.
+- A simulated OBD-II connection. It does not connect to a Bluetooth adapter.
+- A fictional insurer portal with synthetic driver data. It is a demo flow, not an insurer system.
+- PWA install metadata and responsive layouts.
 
-- **A:** coordination, product decisions, integration, and merging reviewed PRs after checks pass.
-- **B:** mobile frontend and UI.
-- **C:** app data, persistence, and approved backend integration.
-- **D:** telematics KPIs, scoring, sample data, and QA.
+## Prototype limits
 
-These are default lanes. Agent A confirms each person’s strengths and records task-level ownership in Notion; roles alone do not authorize coding.
+- No server, real account system, cross-device sync, or real vehicle/driver registry integration. Demo authentication and insurer access are client-side only.
+- The browser demo does not provide a native mobile shell. Live GPS recording is available only in the embedded phone simulator or when hosted inside a compatible native shell; that shell is not included here. Browser background tracking is not supported.
+- Demo trips and driver profiles are synthetic. The bundled Riga speed-limit map is illustrative; map tiles load from OpenStreetMap tile servers.
+- Score weights, thresholds, and OCTA directions are experimental examples. They are not calibrated insurance models, Balcia rules, premiums, quotes, or offers.
+- Raw GPS positions are used while recording and are not saved as trip history. Saved trip summaries remain in browser storage unless the user deletes them.
 
-## Proposed stack
+## Main routes
 
-See [TECH-STACK.md](TECH-STACK.md) for the recommended prototype stack and its limits. It is a proposal for the team to approve before implementation; the repository remains a planning scaffold until the MVP, KPIs, score/price framing, and platform are agreed.
+| Route | Purpose |
+| --- | --- |
+| `/` | Product landing page |
+| `/login` | Select a demo driver |
+| `/app` | Driver dashboard |
+| `/app/drive` | Simulated drive or supported live recording |
+| `/app/trips` | Trip history |
+| `/app/profile` | Profile, consent, and data deletion |
+| `/insurer/login` | Fictional insurer demo |
+| `/insurer` | Synthetic portfolio |
 
-## Setup and run
+## Project layout
 
-After the team approves the proposal, initialize the Expo app with the current stable Expo tooling and record the exact package versions and run commands here. The first demo should use sample trips and work without a backend or live location permission.
+- `web/src/pages/` — landing page, registration flow, and driver app screens.
+- `web/src/data/` — demo API, local persistence, trip models, score calculations, and tests.
+- `web/src/telemetry/` — GPS trip recording, simulation, and live demo messaging.
+- `web/src/insurer/` — fictional insurer portal and portfolio calculations.
+- `docs/` — product, data, score, and privacy proposals. Some documents describe earlier decisions; treat the running app and tests as implementation evidence.
+
+## Collaboration
+
+`main` is the integration branch. B, C, and D work on their own `agent/<ID>/working` branches and push scoped commits there. Agent A integrates changes into `main`. Do not push directly to another agent's branch.
