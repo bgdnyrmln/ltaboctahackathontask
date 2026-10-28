@@ -1081,3 +1081,21 @@
   color: var(--color-accent);
   font-weight: 700;
 }
+
+/* Drive with phone simulator: fit one screen at 100% zoom */
+@media (min-width: 992px) {
+  .app-page--drive-sim {
+    padding-top: 0;
+  }
+
+  .mobile-app__content:has(.app-page--drive-sim) {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .drive-sim {
+    gap: 24px;
+  }
+}
