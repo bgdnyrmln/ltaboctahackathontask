@@ -36,7 +36,7 @@ export interface OctaApi {
   getWeeklyReport(weekStart?: string): Promise<WeeklyReport>;
   getTrend(weeks?: number): Promise<TrendPoint[]>;
   listTrips(weekStart?: string): Promise<TripSummary[]>;
-  saveTrip(trip: TripSummary): Promise<void>; // trips recorded on the phone (Agent B)
+  saveTrip(trip: TripSummary): Promise<TripSummary>; // persists a phone-recorded trip
   deleteMyData(): Promise<{ tripsDeleted: number }>;
   resetDemo(): Promise<void>;
   recordDemoObdTrip(): Promise<TripSummary>; // simulated dongle, see OBD_DEMO_LABEL
@@ -157,14 +157,6 @@ export function createApi(options: ApiOptions = {}): OctaApi {
       return trips.list({ driverId: driver.id, ...weekRange(weekStart) });
     },
 
-    // Added by Agent B for the Drive screen: validates via the repository and persists.
-    async saveTrip(trip) {
-      const { driver } = await requireProfile();
-      if (trip.driverId !== driver.id) throw new Error('Trip belongs to another driver');
-      await ensureSeeded();
-      await trips.save([trip]);
-    },
-
     async deleteMyData() {
       const { driver } = await requireProfile();
       await ensureSeeded();
@@ -192,6 +184,15 @@ export function createApi(options: ApiOptions = {}): OctaApi {
         vehicleId: vehicles[0]?.id ?? null,
         startedAt: new Date(now().getTime() - durationMs),
       });
+      await trips.save([trip]);
+      return trip;
+    },
+
+    // Only the signed-in driver's own trips; throws TripValidationError on bad data.
+    async saveTrip(trip) {
+      const { driver } = await requireProfile();
+      if (trip.driverId !== driver.id) throw new Error(`Trip ${trip.id} belongs to another driver`);
+      await ensureSeeded();
       await trips.save([trip]);
       return trip;
     },
