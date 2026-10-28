@@ -37,6 +37,43 @@ const isNight = (t: number) => {
   return h >= 23 || h < 5;
 };
 
+export interface HarshEvent {
+  t: number; // ms since epoch, first reading of the event
+  kind: 'harsh_brake' | 'harsh_accel';
+  valueMs2: number; // peak acceleration within the merged event, signed
+}
+
+// Harsh events with the aggregator's rule (|dv/dt| >= HARSH_MS2 while moving,
+// readings within MERGE_MS merged into one event). The trip summary keeps only
+// the counts; the timestamps are for the optional trip route (routes/).
+export function harshEvents(samples: SpeedSample[]): HarshEvent[] {
+  const valid = samples.filter((s): s is { t: number; speedKmh: number } => s.speedKmh !== null);
+  const events: HarshEvent[] = [];
+  const last: Record<HarshEvent['kind'], { t: number; event: HarshEvent | null }> = {
+    harsh_brake: { t: -Infinity, event: null },
+    harsh_accel: { t: -Infinity, event: null },
+  };
+  for (let i = 1; i < valid.length; i++) {
+    const prev = valid[i - 1];
+    const cur = valid[i];
+    const dt = cur.t - prev.t;
+    if (dt <= 0 || dt > MAX_GAP_MS) continue;
+    if (Math.max(prev.speedKmh, cur.speedKmh) < MOVING_KMH) continue;
+    const accel = ((cur.speedKmh - prev.speedKmh) / 3.6) / (dt / 1000);
+    const kind = accel <= -HARSH_MS2 ? 'harsh_brake' : accel >= HARSH_MS2 ? 'harsh_accel' : null;
+    if (!kind) continue;
+    const state = last[kind];
+    if (cur.t - state.t > MERGE_MS || !state.event) {
+      state.event = { t: cur.t, kind, valueMs2: Math.round(accel * 10) / 10 };
+      events.push(state.event);
+    } else if (Math.abs(accel) > Math.abs(state.event.valueMs2)) {
+      state.event.valueMs2 = Math.round(accel * 10) / 10;
+    }
+    state.t = cur.t;
+  }
+  return events;
+}
+
 export function aggregateTrip(o: AggregateOptions): TripSummary {
   const valid = o.samples.filter((s): s is { t: number; speedKmh: number } => s.speedKmh !== null);
   if (o.samples.length === 0) throw new Error('aggregateTrip needs at least one sample');
@@ -56,10 +93,6 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
   let slowMs = 0;
   let slowSince: number | null = null;
   let wasTooSlow = false;
-  let brakes = 0;
-  let accels = 0;
-  let lastBrake = -Infinity;
-  let lastAccel = -Infinity;
   let stretchStart: number | null = null;
   let stoppedSince: number | null = null;
   let maxStretchMs = 0;
@@ -107,15 +140,9 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     } else if (stoppedSince === null) {
       stoppedSince = cur.t;
     }
-
-    const accel = ((cur.speedKmh - prev.speedKmh) / 3.6) / (dt / 1000);
-    if (Math.max(prev.speedKmh, cur.speedKmh) >= MOVING_KMH) {
-      if (accel <= -HARSH_MS2 && cur.t - lastBrake > MERGE_MS) brakes++;
-      if (accel <= -HARSH_MS2) lastBrake = cur.t;
-      if (accel >= HARSH_MS2 && cur.t - lastAccel > MERGE_MS) accels++;
-      if (accel >= HARSH_MS2) lastAccel = cur.t;
-    }
   }
+
+  const events = harshEvents(o.samples);
 
   const expected = Math.max(1, Math.round(((endT - startT) / 1000) * (o.expectedHz ?? 1)) + 1);
   const r1 = (x: number) => Math.round(x * 10) / 10;
@@ -136,8 +163,8 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     secOverPct40: Math.round(pct40Ms / 1000),
     secPhoneUse: Math.round(phoneMs / 1000),
     secTooSlow: Math.min(Math.round(slowMs / 1000), Math.round(drivingMs / 1000)),
-    harshBrakeCount: brakes,
-    harshAccelCount: accels,
+    harshBrakeCount: events.filter((e) => e.kind === 'harsh_brake').length,
+    harshAccelCount: events.filter((e) => e.kind === 'harsh_accel').length,
     nightKm: Math.min(Math.round(nightKm * 100) / 100, Math.round(distanceKm * 100) / 100),
     maxContinuousMin: r1(maxStretchMs / 60_000),
     coverage: Math.round(Math.min(1, valid.length / expected) * 100) / 100,
