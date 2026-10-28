@@ -138,6 +138,12 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
       const secOverLimit = Math.round(drivingSec * share);
       const secOver10 = Math.round(secOverLimit * between(rnd, 0.25, 0.5));
       const secOver20 = Math.round(secOver10 * between(rnd, 0.1, 0.35));
+      // Synthetic trips are mostly urban (limit ~50 km/h), where +10% = +5 km/h,
+      // +20% = +10 km/h and +40% = +20 km/h. No extra RNG draws, so existing
+      // demo numbers stay the same.
+      const secOverPct10 = Math.round((secOverLimit + secOver10) / 2);
+      const secOverPct20 = secOver10;
+      const secOverPct40 = secOver20;
 
       trips.push({
         id: `syn-${driverId}-${weekStart}-${String(i).padStart(2, '0')}`,
@@ -150,6 +156,9 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
         secOverLimit,
         secOver10,
         secOver20,
+        secOverPct10,
+        secOverPct20,
+        secOverPct40,
         harshBrakeCount: poisson((profile.brakePer100 * factor * distanceKm) / 100, rnd),
         harshAccelCount: poisson((profile.accelPer100 * factor * distanceKm) / 100, rnd),
         nightKm: night ? distanceKm : 0,

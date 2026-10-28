@@ -1,7 +1,7 @@
 import type { KeyValueStorage } from '../storage.ts';
 import { createMemoryTripRepository } from './memoryStore.ts';
 import type { TripRepository, TripSummary } from './types.ts';
-import { validateTrip } from './validate.ts';
+import { upgradeTrip, validateTrip } from './validate.ts';
 
 export const TRIPS_STORAGE_KEY = 'octa.trips.v2';
 
@@ -11,8 +11,9 @@ function load(storage: KeyValueStorage, key: string): TripSummary[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) throw new Error('not an array');
-    parsed.forEach((t) => validateTrip(t as TripSummary));
-    return parsed as TripSummary[];
+    const trips = parsed.map((t) => upgradeTrip(t as TripSummary));
+    trips.forEach(validateTrip);
+    return trips;
   } catch {
     // Corrupt or outdated snapshot: start clean rather than crash the app.
     try {

@@ -5,7 +5,8 @@ import { createMemoryTripRepository } from './memoryStore.ts';
 import { createSqliteTripRepository } from './sqliteStore.ts';
 import type { SqlDriver, SqlValue } from './sqliteStore.ts';
 import type { TripRepository, TripSummary } from './types.ts';
-import { sumTrips, TripValidationError, validateTrip } from './validate.ts';
+import { speedingBands } from './speeding.ts';
+import { sumTrips, TripValidationError, upgradeTrip, validateTrip } from './validate.ts';
 
 function nodeSqliteDriver(): SqlDriver {
   const db = new DatabaseSync(':memory:');
@@ -34,6 +35,9 @@ function trip(overrides: Partial<TripSummary> = {}): TripSummary {
     secOverLimit: 120,
     secOver10: 40,
     secOver20: 5,
+    secOverPct10: 5,
+    secOverPct20: 5,
+    secOverPct40: 0,
     harshBrakeCount: 2,
     harshAccelCount: 1,
     nightKm: 0,
@@ -167,4 +171,59 @@ describe('sumTrips', () => {
     assert.equal(totals.trips, 0);
     assert.equal(totals.coverage, 0);
   });
+});
+
+describe('relative speeding bands', () => {
+  test('the same +20 km/h is more severe in a 30 zone than on a 110 road', () => {
+    const highway = speedingBands(130, 110); // +18%
+    assert.deepEqual([highway.overLimit, highway.overPct10, highway.overPct20, highway.overPct40], [true, true, false, false]);
+    const zone30 = speedingBands(50, 30); // +67%
+    assert.deepEqual([zone30.overLimit, zone30.overPct10, zone30.overPct20, zone30.overPct40], [true, true, true, true]);
+  });
+
+  test('tolerance is max(3 km/h, 5% of the limit) and gates every band', () => {
+    assert.equal(speedingBands(22.5, 20).overPct10, false); // +12.5% but only +2.5 km/h
+    assert.equal(speedingBands(115, 110).overLimit, false); // +5 < 5.5
+    assert.equal(speedingBands(116, 110).overLimit, true);
+    assert.equal(speedingBands(53.5, 50).overLimit, true); // +3.5 > 3
+  });
+
+  test('validation enforces overPct40 <= overPct20 <= overPct10 <= overLimit', () => {
+    assert.throws(() => validateTrip(trip({ secOverPct10: 200 })), /overPct10/);
+    assert.throws(() => validateTrip(trip({ secOverPct40: 5, secOverPct20: 1 })), /overPct40/);
+    assert.throws(() => validateTrip(trip({ secOverPct20: -1 })), /secOverPct20 must be/);
+  });
+
+  test('sumTrips adds the relative bands', () => {
+    const totals = sumTrips([trip(), trip({ id: 'trip-2', secOverPct40: 2 })]);
+    assert.deepEqual([totals.secOverPct10, totals.secOverPct20, totals.secOverPct40], [10, 10, 2]);
+  });
+
+  test('trips saved before the bands existed load with them as 0', () => {
+    const { secOverPct10: _a, secOverPct20: _b, secOverPct40: _c, ...legacy } = trip();
+    assert.deepEqual(upgradeTrip(legacy), { ...trip(), secOverPct10: 0, secOverPct20: 0, secOverPct40: 0 });
+  });
+});
+
+test('an old sqlite database gains the new columns and keeps its rows', async () => {
+  const driver = nodeSqliteDriver();
+  // Schema as shipped before the relative bands (and before maxContinuousMin).
+  await driver.exec(`CREATE TABLE trip_summary (
+    id TEXT PRIMARY KEY NOT NULL, driver_id TEXT NOT NULL, vehicle_id TEXT,
+    started_at TEXT NOT NULL, ended_at TEXT NOT NULL, distance_km REAL NOT NULL,
+    driving_sec REAL NOT NULL, sec_over_limit REAL NOT NULL, sec_over_10 REAL NOT NULL,
+    sec_over_20 REAL NOT NULL, harsh_brake_count INTEGER NOT NULL, harsh_accel_count INTEGER NOT NULL,
+    night_km REAL NOT NULL, coverage REAL NOT NULL, speed_limit_source TEXT NOT NULL, source TEXT NOT NULL)`);
+  await driver.run(
+    `INSERT INTO trip_summary VALUES ('old-1', 'drv-001', NULL, '2026-10-20T08:00:00.000Z', '2026-10-20T08:30:00.000Z',
+      20, 1500, 120, 40, 5, 2, 1, 0, 0.95, 'road_type_default', 'synthetic')`,
+  );
+  const repo = await createSqliteTripRepository(driver);
+  const old = await repo.get('old-1');
+  assert.deepEqual([old?.secOverPct10, old?.secOverPct20, old?.secOverPct40, old?.maxContinuousMin], [0, 0, 0, 0]);
+  await repo.save([trip({ id: 'new-1' })]);
+  assert.equal((await repo.get('new-1'))?.secOverPct10, 5);
+  // Opening again is a no-op.
+  await createSqliteTripRepository(driver);
+  assert.equal((await repo.list()).length, 2);
 });

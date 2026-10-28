@@ -1,7 +1,7 @@
 // Collects live phone GPS speed samples and turns them into one TripSummary with
 // Agent C's shared aggregator (same rules as the OBD path). Positions are used only
 // to derive speed when the device reports none; they are never stored.
-import { aggregateTrip, getSpeedLimitMap, type SpeedSample, type TripSummary } from '@data'
+import { aggregateTrip, getSpeedLimitMap, speedingBands, type SpeedSample, type TripSummary } from '@data'
 
 export type GpsFix = {
   t: number // epoch ms
@@ -28,7 +28,6 @@ export type LiveStats = {
 
 const MAX_ACCURACY_M = 30
 const MAX_PLAUSIBLE_KMH = 216
-const TOLERANCE_KMH = 3
 // Road-type default limit when the map has no coverage: urban 50 unless sustained
 // >70 km/h for a minute, then 90.
 const URBAN_LIMIT = 50
@@ -131,7 +130,7 @@ export class TripRecorder {
       limitKmh: this.limit,
       limitSource: this.limitSource,
       limitName: this.limitName,
-      overLimit: this.speedKmh - this.limit > TOLERANCE_KMH,
+      overLimit: speedingBands(this.speedKmh, this.limit).overLimit,
       harshBrakes: summary?.harshBrakeCount ?? 0,
       harshAccels: summary?.harshAccelCount ?? 0,
       accuracy: this.accuracy,

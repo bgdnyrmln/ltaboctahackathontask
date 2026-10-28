@@ -1,7 +1,8 @@
 // Turns 1 Hz speed samples into one TripSummary, following the spec:
 // harsh event = |dv/dt| >= 3 m/s² (events within 3 s merged); speeding counted
-// above limit + 3 km/h tolerance; raw samples are discarded afterwards.
+// above limit + tolerance (see trips/speeding.ts); raw samples are discarded afterwards.
 import { rigaParts } from '../time.ts';
+import { speedingBands } from '../trips/speeding.ts';
 import type { TripSummary } from '../trips/types.ts';
 
 export interface SpeedSample {
@@ -23,7 +24,6 @@ export interface AggregateOptions {
 export const HARSH_MS2 = 3.0;
 const MERGE_MS = 3000;
 const MOVING_KMH = 5;
-const TOLERANCE_KMH = 3;
 const BREAK_MS = 15 * 60_000; // a stop this long ends a continuous stretch
 const MAX_GAP_MS = 3000; // GPS/OBD gaps longer than this are not interpolated
 
@@ -44,6 +44,9 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
   let overMs = 0;
   let over10Ms = 0;
   let over20Ms = 0;
+  let pct10Ms = 0;
+  let pct20Ms = 0;
+  let pct40Ms = 0;
   let brakes = 0;
   let accels = 0;
   let lastBrake = -Infinity;
@@ -67,10 +70,13 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
       drivingMs += dt;
       const limit = o.limitKmh(cur.t);
       if (limit !== null) {
-        const over = cur.speedKmh - limit;
-        if (over > TOLERANCE_KMH) overMs += dt;
-        if (over > 10) over10Ms += dt;
-        if (over > 20) over20Ms += dt;
+        const b = speedingBands(cur.speedKmh, limit);
+        if (b.overLimit) overMs += dt;
+        if (b.over10) over10Ms += dt;
+        if (b.over20) over20Ms += dt;
+        if (b.overPct10) pct10Ms += dt;
+        if (b.overPct20) pct20Ms += dt;
+        if (b.overPct40) pct40Ms += dt;
       }
       if (stretchStart === null || (stoppedSince !== null && cur.t - stoppedSince >= BREAK_MS)) {
         stretchStart = cur.t;
@@ -104,6 +110,9 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     secOverLimit: Math.round(overMs / 1000),
     secOver10: Math.round(over10Ms / 1000),
     secOver20: Math.round(over20Ms / 1000),
+    secOverPct10: Math.round(pct10Ms / 1000),
+    secOverPct20: Math.round(pct20Ms / 1000),
+    secOverPct40: Math.round(pct40Ms / 1000),
     harshBrakeCount: brakes,
     harshAccelCount: accels,
     nightKm: Math.min(Math.round(nightKm * 100) / 100, Math.round(distanceKm * 100) / 100),
