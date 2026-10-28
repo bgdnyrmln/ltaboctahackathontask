@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { useT } from '../i18n'
 import { nextStepPath, useAuth } from './AuthContext'
 
 type Stage = 'consent' | 'profile' | 'app'
@@ -12,6 +13,7 @@ const stagePath: Record<Stage, string> = {
 
 // Lets the user see a page only when they are signed in and at that registration stage.
 export function RequireAuth({ stage, children }: { stage: Stage; children: ReactNode }) {
+  const t = useT()
   const { state } = useAuth()
   const location = useLocation()
 
@@ -19,7 +21,7 @@ export function RequireAuth({ stage, children }: { stage: Stage; children: React
     return (
       <div className="app-loading" role="status">
         <span className="spinner" aria-hidden="true" />
-        Loading…
+        {t('Loading…')}
       </div>
     )
   }

@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { KpiIcon } from '../components/KpiIcon'
 import { ScoreRing } from '../components/ScoreRing'
 import { hero, kpiSection, privacy, scorePreview, steps } from '../content/landing'
+import { useT } from '../i18n'
 import './Landing.css'
 
 // Balcia-style section: title column with a cyan rule on the left, content on the right.
@@ -17,14 +18,15 @@ function Section({
   subtitle?: string
   children: ReactNode
 }) {
+  const t = useT()
   return (
     <section id={id} className="section" aria-labelledby={`${id}-title`}>
       <div className="container section__inner">
         <div className="section__head">
           <h2 id={`${id}-title`} className="section__title">
-            {title}
+            {t(title)}
           </h2>
-          {subtitle && <p className="section__subtitle">{subtitle}</p>}
+          {subtitle && <p className="section__subtitle">{t(subtitle)}</p>}
         </div>
         <div className="section__body">{children}</div>
       </div>
@@ -33,6 +35,7 @@ function Section({
 }
 
 function Hero() {
+  const t = useT()
   return (
     <section className="hero" aria-labelledby="hero-title">
       <svg className="hero__art" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -59,10 +62,10 @@ function Hero() {
       <div className="container hero__inner">
         <div className="hero__actions">
           <Link to={hero.primaryCta.href} className="btn btn--primary">
-            {hero.primaryCta.label}
+            {t(hero.primaryCta.label)}
           </Link>
           <a href={hero.secondaryCta.href} className="btn btn--outline-light">
-            {hero.secondaryCta.label}
+            {t(hero.secondaryCta.label)}
           </a>
         </div>
 
@@ -70,11 +73,11 @@ function Hero() {
           <h1 id="hero-title" className="hero__title">
             {hero.lines.map((line) => (
               <span key={line.text} className={line.outlined ? 'hero__line hero__line--outlined' : 'hero__line'}>
-                {line.text}
+                {t(line.text)}
               </span>
             ))}
           </h1>
-          <p className="hero__lead">{hero.lead}</p>
+          <p className="hero__lead">{t(hero.lead)}</p>
         </div>
       </div>
     </section>
@@ -82,6 +85,7 @@ function Hero() {
 }
 
 function Kpis() {
+  const t = useT()
   return (
     <Section id="kpis" title={kpiSection.title} subtitle={kpiSection.subtitle}>
       <ul className="kpi-grid">
@@ -90,31 +94,32 @@ function Kpis() {
             <div className="kpi-card__media">
               <KpiIcon name={kpi.icon} />
             </div>
-            <h3 className="kpi-card__title">{kpi.title}</h3>
-            <p className="kpi-card__unit">{kpi.unit}</p>
+            <h3 className="kpi-card__title">{t(kpi.title)}</h3>
+            <p className="kpi-card__unit">{t(kpi.unit)}</p>
             <div className="kpi-card__row">
               <p className="kpi-card__value">
                 {kpi.value}
                 {kpi.decimals && `.${kpi.decimals}`}
                 <span className="kpi-card__suffix">{kpi.suffix}</span>
               </p>
-              <p className="kpi-card__note">{kpi.note}</p>
+              <p className="kpi-card__note">{t(kpi.note)}</p>
             </div>
           </li>
         ))}
       </ul>
-      <p className="section__footnote">Sample values. Final KPIs and weights are being agreed by the team.</p>
+      <p className="section__footnote">{t('Sample values. Final KPIs and weights are being agreed by the team.')}</p>
     </Section>
   )
 }
 
 function Steps() {
+  const t = useT()
   return (
     <section id="how-it-works" className="band" aria-labelledby="steps-title">
       <div className="container">
         <h2 id="steps-title" className="band__title">
           {steps.title.map((line) => (
-            <span key={line}>{line}</span>
+            <span key={line}>{t(line)}</span>
           ))}
         </h2>
         <ol className="steps">
@@ -123,8 +128,8 @@ function Steps() {
               <span className="steps__number" aria-hidden="true">
                 {index + 1}
               </span>
-              <h3 className="steps__title">{step.title}</h3>
-              <p className="steps__detail">{step.detail}</p>
+              <h3 className="steps__title">{t(step.title)}</h3>
+              <p className="steps__detail">{t(step.detail)}</p>
             </li>
           ))}
         </ol>
@@ -134,20 +139,21 @@ function Steps() {
 }
 
 function Score() {
+  const t = useT()
   return (
     <Section id="score" title={scorePreview.title} subtitle={scorePreview.subtitle}>
       <div className="score-grid">
         <article className="score-card">
-          <ScoreRing score={scorePreview.score} label={scorePreview.scoreLabel} />
-          <ul className="factors" aria-label="Top factors">
+          <ScoreRing score={scorePreview.score} label={t(scorePreview.scoreLabel)} />
+          <ul className="factors" aria-label={t('Top factors')}>
             {scorePreview.factors.map((factor) => (
               <li key={factor.label} className={`factors__item factors__item--${factor.impact}`}>
                 <span className="factors__sign" aria-hidden="true">
                   {factor.impact === 'positive' ? '+' : '−'}
                 </span>
                 <span>
-                  <span className="visually-hidden">{factor.impact === 'positive' ? 'Helps: ' : 'Hurts: '}</span>
-                  {factor.label}
+                  <span className="visually-hidden">{factor.impact === 'positive' ? t('Helps: ') : t('Hurts: ')}</span>
+                  {t(factor.label)}
                 </span>
               </li>
             ))}
@@ -156,19 +162,19 @@ function Score() {
 
         <div className="score-side">
           <article className="tip-card">
-            <h3 className="tip-card__title">{scorePreview.tip.title}</h3>
-            <p>{scorePreview.tip.body}</p>
+            <h3 className="tip-card__title">{t(scorePreview.tip.title)}</h3>
+            <p>{t(scorePreview.tip.body)}</p>
           </article>
           <article className="octa-card">
-            <h3 className="octa-card__title">{scorePreview.octa.title}</h3>
-            <p className="octa-card__band">{scorePreview.octa.band}</p>
+            <h3 className="octa-card__title">{t(scorePreview.octa.title)}</h3>
+            <p className="octa-card__band">{t(scorePreview.octa.band)}</p>
             <div className="octa-card__scale" aria-hidden="true">
               <span />
               <span className="is-active" />
               <span />
               <span />
             </div>
-            <p className="octa-card__disclaimer">{scorePreview.octa.disclaimer}</p>
+            <p className="octa-card__disclaimer">{t(scorePreview.octa.disclaimer)}</p>
           </article>
         </div>
       </div>
@@ -177,6 +183,7 @@ function Score() {
 }
 
 function Privacy() {
+  const t = useT()
   return (
     <section id="privacy" className="why" aria-labelledby="privacy-title">
       <div className="container why__inner">
@@ -184,17 +191,17 @@ function Privacy() {
           {privacy.stats.map((stat) => (
             <div key={stat.label} className="why__stat">
               <dt className="why__value">{stat.value}</dt>
-              <dd className="why__label">{stat.label}</dd>
+              <dd className="why__label">{t(stat.label)}</dd>
             </div>
           ))}
         </dl>
         <div className="why__copy">
           <h2 id="privacy-title" className="section__title">
-            {privacy.title}
+            {t(privacy.title)}
           </h2>
-          <p>{privacy.body}</p>
+          <p>{t(privacy.body)}</p>
           <a href="#score" className="btn btn--outline">
-            See a sample score
+            {t('See a sample score')}
           </a>
         </div>
       </div>

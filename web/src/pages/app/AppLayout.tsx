@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { Logo } from '../../components/Logo'
 import { fullName } from '../../demo/personas'
 import { DriverDataProvider } from '../../demo/useDriverData'
+import { LangSwitch, useT } from '../../i18n'
 import '../App.css'
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
 
 // Mobile app frame: compact top bar, content, bottom tab bar.
 export function AppLayout() {
+  const t = useT()
   const { state, signOut } = useAuth()
   if (state.status !== 'signedIn') return null
   return (
@@ -23,16 +25,17 @@ export function AppLayout() {
           <Logo />
           <div className="mobile-app__bar-end">
             <span className="mobile-app__user">{fullName(state.profile.driver)}</span>
-            <span className="demo-badge">Demo data</span>
+            <LangSwitch />
+            <span className="demo-badge">{t('Demo data')}</span>
             <button type="button" className="mobile-app__signout" onClick={signOut}>
-              Sign out
+              {t('Sign out')}
             </button>
           </div>
         </header>
         <main className="mobile-app__content">
           <Outlet />
         </main>
-        <nav className="tabbar" aria-label="App">
+        <nav className="tabbar" aria-label={t('App')}>
           {TABS.map((tab) => (
             <NavLink key={tab.to} to={tab.to} end={tab.end} className="tabbar__link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -45,7 +48,7 @@ export function AppLayout() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {tab.label}
+              {t(tab.label)}
             </NavLink>
           ))}
         </nav>

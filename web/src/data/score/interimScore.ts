@@ -129,20 +129,21 @@ export function hasFatigueContext(trips: TripSummary[]): boolean {
   return trips.some((t) => t.nightKm > 0 && t.maxContinuousMin > FATIGUE_STRETCH_MIN);
 }
 
-const TIP_TEXT: Record<KpiId, (from: number, to: number) => string> = {
-  speeding_share: (from, to) =>
-    `Speeding took ${from}% of your driving time. Bringing it down to ${to}% is the biggest win this week.`,
-  harsh_brake_per_100km: (from, to) =>
-    `You braked hard ${from} times per 100 km. Leaving more distance ahead could bring it to about ${to}.`,
-  harsh_accel_per_100km: (from, to) =>
-    `You accelerated hard ${from} times per 100 km. Smoother starts could bring it to about ${to}.`,
-  too_slow_share: (from, to) =>
-    `You drove far below the limit for ${from}% of your driving time. Keeping with the flow of traffic where it is safe could bring that to about ${to}%.`,
-  phone_use_share: (from, to) =>
-    `Phone use was ${from}% of your driving time. Keeping it at about ${to}% would help most. Use a mount and set the route before you start.`,
-  fatigue_excess_min: (from, to) =>
-    `Your longest drive ran ${from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about ${to}.`,
+// Templates with {from} and {to}; Tip.text is the English fill, Tip.template + params let the UI translate.
+export const TIP_TEMPLATES: Record<KpiId, string> = {
+  speeding_share: 'Speeding took {from}% of your driving time. Bringing it down to {to}% is the biggest win this week.',
+  harsh_brake_per_100km: 'You braked hard {from} times per 100 km. Leaving more distance ahead could bring it to about {to}.',
+  harsh_accel_per_100km: 'You accelerated hard {from} times per 100 km. Smoother starts could bring it to about {to}.',
+  too_slow_share:
+    'You drove far below the limit for {from}% of your driving time. Keeping with the flow of traffic where it is safe could bring that to about {to}%.',
+  phone_use_share:
+    'Phone use was {from}% of your driving time. Keeping it at about {to}% would help most. Use a mount and set the route before you start.',
+  fatigue_excess_min:
+    'Your longest drive ran {from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about {to}.',
 };
+
+const fill = (template: string, from: number, to: number) =>
+  template.replace('{from}', String(from)).replace('{to}', String(to));
 
 // One main tip: the KPI losing the most points, with the score the driver would
 // get by closing half the gap to "good".
@@ -164,7 +165,9 @@ export function buildTips(result: ScoreResult, fatigue: boolean): Tip[] {
       const gained = worst.weight * (subscoreOf(worst, target) - subscoreOf(worst, worst.value));
       tips.push({
         kind: worst.id,
-        text: TIP_TEXT[worst.id](worst.value, target),
+        text: fill(TIP_TEMPLATES[worst.id], worst.value, target),
+        template: TIP_TEMPLATES[worst.id],
+        params: { from: worst.value, to: target },
         projectedScore: Math.min(100, Math.round(result.score + Math.max(0, gained))),
       });
     }

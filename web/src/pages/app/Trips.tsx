@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router'
 import { TripThumb } from '../../components/TripThumb'
 import { routeForTrip } from '../../demo/tripRoutes'
 import { useDriverData } from '../../demo/useDriverData'
+import { useLang, useT } from '../../i18n'
 
 const SOURCE_LABEL: Record<string, string> = {
   phone: 'Phone GPS',
@@ -10,56 +11,60 @@ const SOURCE_LABEL: Record<string, string> = {
   obd: 'OBD',
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-})
+const dateFormat = (locale: string) =>
+  new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 
 export function Trips() {
+  const t = useT()
+  const { lang } = useLang()
+  const dateFmt = dateFormat(lang === 'lv' ? 'lv-LV' : 'en-GB')
   const { trips, loading } = useDriverData()
   const location = useLocation()
   const savedId = (location.state as { saved?: string } | null)?.saved
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <p className="muted">{t('Loading…')}</p>
 
   const list = trips
 
   return (
     <div className="app-page">
-      <h1 className="app-page__title">Trips</h1>
+      <h1 className="app-page__title">{t('Trips')}</h1>
       {savedId && (
         <p className="form-note" role="status">
-          Trip saved. Your score has been updated.
+          {t('Trip saved. Your score has been updated.')}
         </p>
       )}
       {list.length === 0 ? (
-        <p className="muted">No trips yet. Record one on the Drive tab.</p>
+        <p className="muted">{t('No trips yet. Record one on the Drive tab.')}</p>
       ) : (
         <ul className="trip-list">
-          {list.map((t) => {
-            const minutes = Math.round(t.drivingSec / 60)
-            const speeding = t.drivingSec > 0 ? Math.round((t.secOverLimit / t.drivingSec) * 100) : 0
-            const route = routeForTrip(t)
+          {list.map((tr) => {
+            const minutes = Math.round(tr.drivingSec / 60)
+            const speeding = tr.drivingSec > 0 ? Math.round((tr.secOverLimit / tr.drivingSec) * 100) : 0
+            const route = routeForTrip(tr)
             return (
-              <li key={t.id}>
-                <Link to={`/app/trips/${t.id}`} className={`trip${t.id === savedId ? ' is-new' : ''}`}>
+              <li key={tr.id}>
+                <Link to={`/app/trips/${tr.id}`} className={`trip${tr.id === savedId ? ' is-new' : ''}`}>
                   {route && (
                     <span className="trip__thumb">
                       <TripThumb route={route} />
                     </span>
                   )}
                   <div className="trip__head">
-                    <span className="trip__date">{dateFmt.format(new Date(t.startedAt))}</span>
-                    <span className={`source source--${t.source}`}>{SOURCE_LABEL[t.source] ?? t.source}</span>
+                    <span className="trip__date">{dateFmt.format(new Date(tr.startedAt))}</span>
+                    <span className={`source source--${tr.source}`}>{t(SOURCE_LABEL[tr.source] ?? tr.source)}</span>
                   </div>
                   <p className="trip__main">
-                    {t.distanceKm.toFixed(1)} km · {minutes} min
+                    {tr.distanceKm.toFixed(1)} km · {minutes} min
                   </p>
                   <p className="trip__meta">
-                    Over limit {speeding}% · braking {t.harshBrakeCount} · accel. {t.harshAccelCount}
-                    {t.nightKm > 0 && ` · night ${t.nightKm.toFixed(1)} km`}
+                    {t('Over limit {n}% · braking {b} · accel. {a}', { n: speeding, b: tr.harshBrakeCount, a: tr.harshAccelCount })}
+                    {tr.nightKm > 0 && ` · ${t('night {km} km', { km: tr.nightKm.toFixed(1) })}`}
                   </p>
                   {route && (
                     <p className="trip__route">

@@ -5,6 +5,7 @@ import { nextStepPath, useAuth } from '../auth/AuthContext'
 import { appApi } from '../auth/appApi'
 import { nameForDemoId } from '../demo/personas'
 import { AppShell, Stepper } from '../components/AppShell'
+import { useT } from '../i18n'
 import './App.css'
 
 // Messages per HACK-17 contract. Never echo what the user typed.
@@ -19,6 +20,7 @@ const CONFIRM_MS = 2600
 type Step = { kind: 'choose' } | { kind: 'confirm'; demoId: string; code: string }
 
 export function Login() {
+  const t = useT()
   const { state, signIn } = useAuth()
   const navigate = useNavigate()
   const [options, setOptions] = useState<DemoIdentityOption[]>([])
@@ -81,8 +83,8 @@ export function Login() {
               ID
             </span>
             <div>
-              <h1 className="auth-card__title">Sign in with Smart-ID</h1>
-              <p className="demo-label">{DEMO_LABEL}</p>
+              <h1 className="auth-card__title">{t('Sign in with Smart-ID')}</h1>
+              <p className="demo-label">{t(DEMO_LABEL)}</p>
             </div>
           </div>
 
@@ -90,12 +92,12 @@ export function Login() {
             <form onSubmit={start} className="auth-form" noValidate>
               {error && (
                 <p className="form-error" role="alert">
-                  {ERROR_TEXT[error]}
+                  {t(ERROR_TEXT[error])}
                 </p>
               )}
 
               <fieldset className="profile-picker">
-                <legend>Choose a demo profile</legend>
+                <legend>{t('Choose a demo profile')}</legend>
                 {options.map((option) => (
                   <label key={option.demoId} className="profile-option">
                     <input
@@ -117,7 +119,7 @@ export function Login() {
               </fieldset>
 
               <label className="field">
-                <span className="field__label">Or enter a demo ID</span>
+                <span className="field__label">{t('Or enter a demo ID')}</span>
                 <input
                   className="field__input"
                   value={typed}
@@ -126,25 +128,25 @@ export function Login() {
                   autoComplete="off"
                   inputMode="text"
                 />
-                <span className="field__hint">Do not enter a real personal code.</span>
+                <span className="field__hint">{t('Do not enter a real personal code.')}</span>
               </label>
 
               <button type="submit" className="btn btn--primary auth-form__submit">
-                Continue
+                {t('Continue')}
               </button>
             </form>
           ) : (
             <div className="sid-confirm" role="status" aria-live="polite">
-              <p className="sid-confirm__label">Verification code</p>
+              <p className="sid-confirm__label">{t('Verification code')}</p>
               <p className="sid-confirm__code">{step.code}</p>
               <p className="sid-confirm__text">
-                In the real Smart-ID app you would check this code and enter PIN1. This demo confirms automatically.
+                {t('In the real Smart-ID app you would check this code and enter PIN1. This demo confirms automatically.')}
               </p>
               <div className="progress" aria-hidden="true">
                 <span style={{ animationDuration: `${CONFIRM_MS}ms` }} />
               </div>
               <button type="button" className="btn btn--outline" onClick={cancel}>
-                Cancel
+                {t('Cancel')}
               </button>
             </div>
           )}

@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router'
 import { maskCode } from '../demo/personas'
 import { BAND_TEXT, usePortfolio } from './InsurerPortal'
 import type { DriverRow } from './portfolio'
+import { useT, useTn } from '../i18n'
 
 // Insurer's driver database: look a person up by personal code, name or plate,
 // the way an underwriter or claims handler would. Driving data is only shown for
@@ -22,6 +23,8 @@ function matches(r: DriverRow, q: string) {
 }
 
 export function InsurerSearch() {
+  const t = useT()
+  const tn = useTn()
   const rows = usePortfolio()
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState(params.get('q') ?? '')
@@ -53,84 +56,83 @@ export function InsurerSearch() {
   return (
     <div className="ins-page">
       <div className="ins-page__head">
-        <h1>Driver database</h1>
+        <h1>{t('Driver database')}</h1>
         <p className="muted">
-          Find a driver by personal code, name or vehicle plate. Driving scores appear only for drivers who share them
-          with you.
+          {t('Find a driver by personal code, name or vehicle plate. Driving scores appear only for drivers who share them with you.')}
         </p>
       </div>
 
       <form className="panel ins-search-form" onSubmit={submit} role="search">
         <label className="field ins-search-form__q">
-          <span className="field__label">Personal code, name or plate</span>
+          <span className="field__label">{t('Personal code, name or plate')}</span>
           <input
             className="field__input ins-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. 300291-17428, Bērziņa or DEMO-101"
+            placeholder={t('e.g. 300291-17428, Bērziņa or DEMO-101')}
             autoFocus
           />
         </label>
         <label className="field">
-          <span className="field__label">Data sharing</span>
+          <span className="field__label">{t('Data sharing')}</span>
           <select
             className="field__input ins-select"
             value={sharing}
             onChange={(e) => setSharing(e.target.value as Sharing)}
           >
-            <option value="all">All drivers</option>
-            <option value="sharing">Sharing with us</option>
-            <option value="private">Not sharing</option>
+            <option value="all">{t('All drivers')}</option>
+            <option value="sharing">{t('Sharing with us')}</option>
+            <option value="private">{t('Not sharing')}</option>
           </select>
         </label>
         <label className="field">
-          <span className="field__label">Risk band</span>
+          <span className="field__label">{t('Risk band')}</span>
           <select
             className="field__input ins-select"
             value={band}
             onChange={(e) => setBand(e.target.value as RiskBand | 'any')}
           >
-            <option value="any">Any</option>
+            <option value="any">{t('Any')}</option>
             {(Object.keys(BAND_TEXT) as RiskBand[]).map((b) => (
               <option key={b} value={b}>
-                {BAND_TEXT[b]}
+                {t(BAND_TEXT[b])}
               </option>
             ))}
           </select>
         </label>
         <button type="submit" className="btn btn--primary ins-search-form__go">
-          Search
+          {t('Search')}
         </button>
       </form>
 
       {!rows ? (
-        <p className="muted">Loading…</p>
+        <p className="muted">{t('Loading…')}</p>
       ) : !searched ? (
         <section className="panel ins-empty">
           <p>
-            Enter a personal code, name or plate and press <strong>Search</strong>. Leave the field empty to list
-            everyone ({rows.length} drivers in the database).
+            {t('Enter a personal code, name or plate and press')} <strong>{t('Search')}</strong>.{' '}
+            {t('Leave the field empty to list everyone ({n} drivers in the database).', { n: rows.length })}
           </p>
         </section>
       ) : (
         <section className="panel">
           <p className="ins-count">
-            {results.length} {results.length === 1 ? 'record' : 'records'} found
+            {tn(results.length, '{n} record found', '{n} records found')}
           </p>
           {results.length === 0 ? (
-            <p className="muted">No driver matches. Check the personal code or try a name or plate.</p>
+            <p className="muted">{t('No driver matches. Check the personal code or try a name or plate.')}</p>
           ) : (
             <div className="ins-table-wrap">
               <table className="ins-table">
                 <thead>
                   <tr>
-                    <th>Driver</th>
-                    <th>Personal code</th>
-                    <th>Vehicle</th>
-                    <th>Data sharing</th>
-                    <th>Final score</th>
-                    <th>Band</th>
-                    <th>This week</th>
+                    <th>{t('Driver')}</th>
+                    <th>{t('Personal code')}</th>
+                    <th>{t('Vehicle')}</th>
+                    <th>{t('Data sharing')}</th>
+                    <th>{t('Final score')}</th>
+                    <th>{t('Band')}</th>
+                    <th>{t('This week')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -148,7 +150,7 @@ export function InsurerSearch() {
                         </td>
                         <td>
                           <span className={`share-badge${s ? ' is-on' : ''}`}>
-                            {s ? 'Sharing' : r.deleted ? 'Data deleted' : 'Not sharing'}
+                            {s ? t('Sharing') : r.deleted ? t('Data deleted') : t('Not sharing')}
                           </span>
                         </td>
                         <td className="num">
@@ -160,12 +162,12 @@ export function InsurerSearch() {
                             '—'
                           )}
                         </td>
-                        <td>{s?.report.result.band ? BAND_TEXT[s.report.result.band] : '—'}</td>
+                        <td>{s?.report.result.band ? t(BAND_TEXT[s.report.result.band]) : '—'}</td>
                         <td className="num">{s ? `${Math.round(s.report.totals.distanceKm)} km` : '—'}</td>
                         <td>
                           {s && (
                             <Link to={`/insurer/drivers/${r.driverId}`} className="btn btn--outline ins-open">
-                              Open record
+                              {t('Open record')}
                             </Link>
                           )}
                         </td>

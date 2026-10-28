@@ -5,6 +5,7 @@ import { TripReplayMap } from '../../components/TripReplayMap'
 import { useDriverData } from '../../demo/useDriverData'
 import { routeForTrip } from '../../demo/tripRoutes'
 import { BREAK_LIMIT_MIN, breakLimitLabel, fmtDuration } from '../../telemetry/breaks'
+import { useLang, useT } from '../../i18n'
 
 const SOURCE_LABEL: Record<string, string> = {
   phone: 'Phone GPS',
@@ -13,13 +14,14 @@ const SOURCE_LABEL: Record<string, string> = {
   obd: 'OBD',
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  hour: '2-digit',
-  minute: '2-digit',
-})
+const dateFormat = (locale: string) =>
+  new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 const fmt = (n: number, d = 1) => (Number.isFinite(n) ? n.toFixed(d) : '—')
 
 type Metric = { label: string; trip: number; week: number; unit: string; lowerIsBetter: boolean }
@@ -39,6 +41,9 @@ function metricsOf(t: {
 }
 
 export function TripDetail() {
+  const t = useT()
+  const { lang } = useLang()
+  const dateFmt = dateFormat(lang === 'lv' ? 'lv-LV' : 'en-GB')
   const { id } = useParams()
   const { trips, loading } = useDriverData()
   const trip = trips.find((t) => t.id === id)
@@ -57,14 +62,14 @@ export function TripDetail() {
     return { weekStart, withTrip, without }
   }, [trip, trips])
 
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <p className="muted">{t('Loading…')}</p>
   if (!trip || !impact) {
     return (
       <div className="app-page">
         <Link to="/app/trips" className="back-link">
-          ← All trips
+          {t('← All trips')}
         </Link>
-        <p className="muted">This trip is not in your recent history.</p>
+        <p className="muted">{t('This trip is not in your recent history.')}</p>
       </div>
     )
   }
@@ -87,33 +92,31 @@ export function TripDetail() {
   return (
     <div className="app-page trip-detail">
       <Link to="/app/trips" className="back-link">
-        ← All trips
+        {t('← All trips')}
       </Link>
       <div className="trip-detail__head">
-        <h1 className="app-page__title">{from && to ? `${from} → ${to}` : 'Trip details'}</h1>
+        <h1 className="app-page__title">{from && to ? `${from} → ${to}` : t('Trip details')}</h1>
         <p className="muted">
-          {dateFmt.format(new Date(trip.startedAt))} · {SOURCE_LABEL[trip.source] ?? trip.source}
+          {dateFmt.format(new Date(trip.startedAt))} · {t(SOURCE_LABEL[trip.source] ?? trip.source)}
         </p>
       </div>
 
       <div className="dash">
         <div className="dash__col">
           <section className="panel">
-            <h2 className="panel__title">Route</h2>
+            <h2 className="panel__title">{t('Route')}</h2>
             {route && from && to ? (
               <>
                 {route.kind === 'illustrative' && (
                   <p className="form-note">
-                    Illustrative route: this demo trip has no recorded positions, so its real totals (distance, time
-                    over the limit, harsh events) are shown on a sample Riga route.
+                    {t('Illustrative route: this demo trip has no recorded positions, so its real totals (distance, time over the limit, harsh events) are shown on a sample Riga route.')}
                   </p>
                 )}
                 <TripReplayMap points={route.points} events={route.events} from={from} to={to} />
               </>
             ) : (
               <p className="muted">
-                No route to show. Routes recorded with the phone's GPS are never stored for privacy; only trip totals
-                are kept.
+                {t("No route to show. Routes recorded with the phone's GPS are never stored for privacy; only trip totals are kept.")}
               </p>
             )}
           </section>
@@ -121,19 +124,20 @@ export function TripDetail() {
 
         <div className="dash__col">
           <section className="panel impact">
-            <h2 className="panel__title">Effect on your score</h2>
+            <h2 className="panel__title">{t('Effect on your score')}</h2>
             {delta === null ? (
               <p className="muted">
-                Not enough data in that week for a score{scoreWith !== null ? ` (week score ${scoreWith})` : ''}.
+                {t('Not enough data in that week for a score')}
+                {scoreWith !== null ? ` (${t('week score {n}', { n: scoreWith })})` : ''}.
               </p>
             ) : (
               <>
                 <p className={`impact__delta ${delta > 0 ? 'is-up' : delta < 0 ? 'is-down' : ''}`}>
                   {delta > 0 ? '+' : ''}
-                  {delta} <small>points</small>
+                  {delta} <small>{t('points')}</small>
                 </p>
                 <p className="muted">
-                  Week score {scoreWith} with this trip, {scoreWithout} without it.
+                  {t('Week score {a} with this trip, {b} without it.', { a: scoreWith ?? '—', b: scoreWithout ?? '—' })}
                 </p>
               </>
             )}
@@ -142,11 +146,11 @@ export function TripDetail() {
                 const better = m.lowerIsBetter ? m.trip <= m.week : m.trip >= m.week
                 return (
                   <li key={m.label}>
-                    <span className="compare__label">{m.label}</span>
+                    <span className="compare__label">{t(m.label)}</span>
                     <span className={`compare__trip ${better ? 'is-good' : 'is-bad'}`}>
-                      {fmt(m.trip)} <small>{m.unit}</small>
+                      {fmt(m.trip)} <small>{t(m.unit)}</small>
                     </span>
-                    <span className="compare__week">week {fmt(m.week)}</span>
+                    <span className="compare__week">{t('week {n}', { n: fmt(m.week) })}</span>
                   </li>
                 )
               })}
@@ -154,49 +158,49 @@ export function TripDetail() {
           </section>
 
           <section className="panel">
-            <h2 className="panel__title">Details</h2>
+            <h2 className="panel__title">{t('Details')}</h2>
             <dl className="facts">
               <div>
-                <dt>Distance</dt>
+                <dt>{t('Distance')}</dt>
                 <dd>{fmt(trip.distanceKm)} km</dd>
               </div>
               <div>
-                <dt>Driving time</dt>
+                <dt>{t('Driving time')}</dt>
                 <dd>{minutes} min</dd>
               </div>
               <div>
-                <dt>Average speed</dt>
+                <dt>{t('Average speed')}</dt>
                 <dd>{fmt(avgKmh, 0)} km/h</dd>
               </div>
               <div>
-                <dt>Over the limit by 10+ / 20+ km/h</dt>
+                <dt>{t('Over the limit by 10+ / 20+ km/h')}</dt>
                 <dd>
                   {Math.round(trip.secOver10)} s / {Math.round(trip.secOver20)} s
                 </dd>
               </div>
               <div>
-                <dt>Harsh braking / acceleration</dt>
+                <dt>{t('Harsh braking / acceleration')}</dt>
                 <dd>
                   {trip.harshBrakeCount} / {trip.harshAccelCount}
                 </dd>
               </div>
               <div>
-                <dt>Longest stretch without a break (limit {breakLimitLabel()})</dt>
+                <dt>{t('Longest stretch without a break (limit {d})', { d: breakLimitLabel() })}</dt>
                 <dd className={trip.maxContinuousMin > BREAK_LIMIT_MIN ? 'is-warning' : ''}>
                   {fmtDuration(trip.maxContinuousMin)}
-                  {trip.maxContinuousMin > BREAK_LIMIT_MIN && ' · over the limit'}
+                  {trip.maxContinuousMin > BREAK_LIMIT_MIN && ` · ${t('over the limit')}`}
                 </dd>
               </div>
               <div>
-                <dt>Night driving</dt>
+                <dt>{t('Night driving')}</dt>
                 <dd>{fmt(trip.nightKm)} km</dd>
               </div>
               <div>
-                <dt>Speed limits from</dt>
-                <dd>{trip.speedLimitSource === 'map' ? 'Map (demo)' : 'Road-type default'}</dd>
+                <dt>{t('Speed limits from')}</dt>
+                <dd>{trip.speedLimitSource === 'map' ? t('Map (demo)') : t('Road-type default')}</dd>
               </div>
               <div>
-                <dt>Data coverage</dt>
+                <dt>{t('Data coverage')}</dt>
                 <dd>{Math.round(trip.coverage * 100)}%</dd>
               </div>
             </dl>

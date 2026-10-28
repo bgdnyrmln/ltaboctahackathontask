@@ -20,13 +20,16 @@ import '@fontsource/roboto/latin-500.css'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './auth/AuthContext'
+import { LangProvider } from './i18n'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <LangProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </LangProvider>
     </BrowserRouter>
   </StrictMode>,
 )

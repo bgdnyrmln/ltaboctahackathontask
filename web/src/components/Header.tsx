@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { brand, nav } from '../content/landing'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import { LangSwitch, useT } from '../i18n'
 import { Logo } from './Logo'
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { canInstall, install } = useInstallPrompt()
+  const t = useT()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -38,15 +40,15 @@ export function Header() {
   return (
     <header className={`site-header${solid ? ' site-header--solid' : ''}${menuOpen ? ' site-header--menu-open' : ''}`}>
       <div className="container site-header__inner">
-        <Link to="/" className="site-header__logo" aria-label={`${brand.name} home`} onClick={closeMenu}>
+        <Link to="/" className="site-header__logo" aria-label={t('{name} home', { name: brand.name })} onClick={closeMenu}>
           <Logo light={!solid} />
         </Link>
 
-        <nav className="site-nav" aria-label="Main">
+        <nav className="site-nav" aria-label={t('Main')}>
           <ul>
             {nav.map((item) => (
               <li key={item.href}>
-                <a href={item.href}>{item.label}</a>
+                <a href={item.href}>{t(item.label)}</a>
               </li>
             ))}
           </ul>
@@ -55,15 +57,16 @@ export function Header() {
         <div className="site-header__actions">
           {canInstall && (
             <button type="button" className="btn btn--pill btn--cyan" onClick={install}>
-              Install app
+              {t('Install app')}
             </button>
           )}
           <Link to="/insurer" className="btn btn--pill btn--outline-light site-header__insurer">
-            For insurers
+            {t('For insurers')}
           </Link>
           <Link to="/login" className="btn btn--pill btn--outline-light site-header__demo">
-            Try demo
+            {t('Try demo')}
           </Link>
+          <LangSwitch />
           <button
             type="button"
             className="site-header__menu-btn"
@@ -72,27 +75,27 @@ export function Header() {
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="site-header__burger" aria-hidden="true" />
-            {menuOpen ? 'Close' : 'Menu'}
+            {menuOpen ? t('Close') : t('Menu')}
           </button>
         </div>
       </div>
 
-      <nav id="mobile-menu" className={`mobile-menu${menuOpen ? ' is-open' : ''}`} aria-label="Main" inert={!menuOpen}>
+      <nav id="mobile-menu" className={`mobile-menu${menuOpen ? ' is-open' : ''}`} aria-label={t('Main')} inert={!menuOpen}>
         <ul className="container">
           {nav.map((item, index) => (
             <li key={item.href} style={{ '--i': index } as React.CSSProperties}>
               <a href={item.href} onClick={closeMenu}>
-                {item.label}
+                {t(item.label)}
               </a>
             </li>
           ))}
         </ul>
         <div className="container mobile-menu__footer">
           <Link to="/login" className="btn btn--primary" onClick={closeMenu}>
-            Try demo
+            {t('Try demo')}
           </Link>
           <Link to="/insurer" className="btn btn--outline" onClick={closeMenu}>
-            For insurers
+            {t('For insurers')}
           </Link>
         </div>
       </nav>

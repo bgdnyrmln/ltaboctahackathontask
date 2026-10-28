@@ -2,9 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell, Stepper } from '../components/AppShell'
+import { useT } from '../i18n'
 import './App.css'
 
 export function RegisterConsent() {
+  const t = useT()
   const { state, giveConsent } = useAuth()
   const navigate = useNavigate()
   const existing = state.status === 'signedIn' ? state.registration.consent : undefined
@@ -24,37 +26,36 @@ export function RegisterConsent() {
       <div className="container auth-page">
         <Stepper current={2} />
         <form className="auth-card" onSubmit={submit}>
-          <h1 className="auth-card__title">Your data, your choice</h1>
+          <h1 className="auth-card__title">{t('Your data, your choice')}</h1>
           <p className="auth-card__lead">
-            We score how you drive. Profile data such as licence age never changes your behaviour score; it only
-            adjusts a separate &quot;with profile&quot; number shown next to it.
+            {t('We score how you drive. Profile data such as licence age never changes your behaviour score; it only adjusts a separate "with profile" number shown next to it.')}
           </p>
 
           <div className="consents">
             <label className="consent">
               <input type="checkbox" checked={fakeData} onChange={(e) => setFakeData(e.target.checked)} required />
               <span>
-                <strong>I understand this is a demo.</strong> All drivers, vehicles and trips are synthetic.
+                <strong>{t('I understand this is a demo.')}</strong> {t('All drivers, vehicles and trips are synthetic.')}
               </span>
             </label>
             <label className="consent">
               <input type="checkbox" checked={trips} onChange={(e) => setTrips(e.target.checked)} required />
               <span>
-                <strong>Calculate my score on this device.</strong> Trip summaries stay local; raw locations are never
-                stored. You can delete them any time.
+                <strong>{t('Calculate my score on this device.')}</strong>{' '}
+                {t('Trip summaries stay local; raw locations are never stored. You can delete them any time.')}
               </span>
             </label>
             <label className="consent consent--optional">
               <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
               <span>
-                <strong>Optional: share my weekly score with Demo Insurer AS.</strong> Only weekly scores and totals,
-                never trips or locations. You can switch it off any time.
+                <strong>{t('Optional: share my weekly score with Demo Insurer AS.')}</strong>{' '}
+                {t('Only weekly scores and totals, never trips or locations. You can switch it off any time.')}
               </span>
             </label>
           </div>
 
           <button type="submit" className="btn btn--primary auth-form__submit" disabled={!fakeData || !trips}>
-            Agree and continue
+            {t('Agree and continue')}
           </button>
         </form>
       </div>

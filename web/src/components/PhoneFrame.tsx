@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { PHONE_FRAME_NAME } from '../telemetry/platform'
 import './PhoneFrame.css'
+import { useT } from '../i18n'
 
 const PHONE_W = 390
 const PHONE_H = 800
@@ -21,6 +22,7 @@ export function PhoneFrame({
   caption?: string
   fit?: boolean
 }) {
+  const t = useT()
   const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
 
@@ -39,7 +41,7 @@ export function PhoneFrame({
   }, [fit, caption])
 
   return (
-    <figure className="phone" aria-label="Phone app">
+    <figure className="phone" aria-label={t('Phone app')}>
       <div ref={box} className="phone__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
         <div className="phone__body" style={scale < 1 ? { transform: `scale(${scale})` } : undefined}>
           <div className="phone__status" aria-hidden="true">
@@ -47,7 +49,7 @@ export function PhoneFrame({
             <span className="phone__notch" />
             <span>5G ▮▮▮</span>
           </div>
-          <iframe name={PHONE_FRAME_NAME} src={src} title="Fake OCTA Coach phone app" className="phone__screen" />
+          <iframe name={PHONE_FRAME_NAME} src={src} title={t('Fake OCTA Coach phone app')} className="phone__screen" />
         </div>
       </div>
       {caption && <figcaption>{caption}</figcaption>}
