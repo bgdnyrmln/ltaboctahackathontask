@@ -2,6 +2,7 @@ import { finalScore, inputsFromProfile, profileRisk, type Confidence, type RiskB
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { ScoreRing } from '../../components/ScoreRing'
+import { firstName } from '../../demo/personas'
 import { useDriverData } from '../../demo/useDriverData'
 
 const CONFIDENCE_TEXT: Record<Confidence, string> = {
@@ -32,12 +33,12 @@ export function Home() {
   const risk = profileRisk(inputsFromProfile(state.profile, new Date()), new Date())
   const fin = finalScore(result.score, risk)
   const previous = trend.length > 1 ? trend[trend.length - 2] : undefined
-  const firstName = state.profile.driver.displayName.split(' ').pop()
+  const name = firstName(state.profile.driver)
   const nightShare = totals.distanceKm > 0 ? (totals.nightKm / totals.distanceKm) * 100 : 0
 
   return (
     <div className="app-page">
-      <h1 className="app-page__title">Hi, {firstName}</h1>
+      <h1 className="app-page__title">Hi, {name}</h1>
       <p className="muted">
         This week · {fmt(totals.distanceKm, 0)} km · {report.trips} {report.trips === 1 ? 'trip' : 'trips'}
       </p>

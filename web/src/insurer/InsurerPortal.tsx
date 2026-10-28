@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useNavigate, useParams } from 'react-router'
 import { onSharedDataChange } from '../auth/appApi'
 import { Logo } from '../components/Logo'
+import { maskCode, PERSONAL_CODE_NOTE } from '../demo/personas'
 import { loadPortfolio, portfolioCsv, type DriverRow } from './portfolio'
 import './insurer.css'
 
@@ -137,7 +138,11 @@ export function InsurerPortfolio() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     const list = (rows ?? []).filter(
-      (r) => !q || r.name.toLowerCase().includes(q) || (r.plate ?? '').toLowerCase().includes(q),
+      (r) =>
+        !q ||
+        r.name.toLowerCase().includes(q) ||
+        (r.plate ?? '').toLowerCase().includes(q) ||
+        (r.personalCode ?? '').includes(q),
     )
     return list.sort((a, b) =>
       sort === 'name'
@@ -207,7 +212,7 @@ export function InsurerPortfolio() {
         <div className="ins-toolbar">
           <input
             className="field__input ins-search"
-            placeholder="Search name or plate"
+            placeholder="Search name, personal code or plate"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search drivers"
@@ -245,7 +250,10 @@ export function InsurerPortfolio() {
                 const s = r.shared
                 return (
                   <tr key={r.driverId} className={s ? '' : 'is-private'}>
-                    <td>{s ? <Link to={`/insurer/drivers/${r.driverId}`}>{r.name}</Link> : r.name}</td>
+                    <td>
+                      {s ? <Link to={`/insurer/drivers/${r.driverId}`}>{r.name}</Link> : r.name}
+                      {r.personalCode && <small className="ins-code">{maskCode(r.personalCode)}</small>}
+                    </td>
                     <td>
                       {r.plate && <span className="plate">{r.plate}</span>} {r.vehicle}
                     </td>
@@ -309,6 +317,11 @@ export function InsurerDriver() {
       <div className="ins-page__head">
         <h1>{r.name}</h1>
         <p className="muted">
+          {r.personalCode && (
+            <span title={PERSONAL_CODE_NOTE}>
+              Personal code {r.personalCode} <span className="demo-tag">demo</span> ·{' '}
+            </span>
+          )}
           {r.plate && <span className="plate">{r.plate}</span>} {r.vehicle} · week of {s.report.weekStart}
         </p>
       </div>
