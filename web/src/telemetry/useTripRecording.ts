@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
 import { PLACES, pickRandomSimTrip, simTrip, startSimulatedDrive, type SimTripId } from './simulatedDrive'
+import { obdConnectedDevice } from './obdLink'
 import { rememberSimTrip } from './tripAnalysis'
 import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
 
@@ -81,7 +82,8 @@ export function useTripRecording() {
       const trip = simTrip(tripId)
       postLiveTrip({ type: 'start', at: Date.now(), from: PLACES[trip.from].name, to: PLACES[trip.to].name })
       setError(null)
-      recorder.current = new TripRecorder('synthetic')
+      // With the (simulated) OBD-II adapter connected, trips are labelled as OBD data.
+      recorder.current = new TripRecorder(obdConnectedDevice() ? 'obd_mock' : 'synthetic')
       setStatus('recording')
       stopSimulation.current = startSimulatedDrive(tripId, ingest, () => setRouteDone(true))
       return
@@ -142,7 +144,7 @@ export function useTripRecording() {
       const last = recorder.current?.stats()
       const trip = recorder.current?.finish(driverId, vehicleId) ?? null
       // Simulated trips can be replayed later from their script (no positions stored).
-      if (trip && trip.source === 'synthetic' && simTripId.current) rememberSimTrip(trip.id, simTripId.current)
+      if (trip && trip.source !== 'phone' && simTripId.current) rememberSimTrip(trip.id, simTripId.current)
       simTripId.current = null
       postLiveTrip({
         type: 'end',

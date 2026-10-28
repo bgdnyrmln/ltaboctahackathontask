@@ -80,8 +80,8 @@ export class TripRecorder {
   private readonly startedAt = Date.now()
 
   // Phone GPS by default; the website's phone simulator records synthetic trips.
-  private readonly source: 'phone' | 'synthetic'
-  constructor(source: 'phone' | 'synthetic' = 'phone') {
+  private readonly source: 'phone' | 'synthetic' | 'obd_mock'
+  constructor(source: 'phone' | 'synthetic' | 'obd_mock' = 'phone') {
     this.source = source
   }
 
