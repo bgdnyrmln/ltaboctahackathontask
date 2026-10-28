@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { SEED_DRIVERS, SEED_VEHICLES } from '../seed.ts';
 import { UNKNOWN } from '../types.ts';
 import type { Profile } from '../types.ts';
 import { P_MAX, P_MIN, finalScore, inputsFromProfile, profileRisk } from './profileRisk.ts';
@@ -55,14 +56,38 @@ test('final score is behaviour divided by P and stays within 0..100', () => {
 
 test('maps C mock profiles, including unknown fields', () => {
   const full: Profile = {
-    driver: { id: 'd', displayName: 'x', licenseCategories: ['B'], licenseSince: '2016-05-01', synthetic: true },
-    vehicles: [{ id: 'v', ownerDriverId: 'd', plateLabel: 'DEMO-1', make: 'a', model: 'b', year: 2019, synthetic: true }],
+    driver: {
+      id: 'd', displayName: 'x', licenseCategories: ['B'], licenseSince: '2016-05-01', synthetic: true,
+      claimsLast5y: 0, penaltyPoints: 0, birthYear: 1990,
+    },
+    vehicles: [{
+      id: 'v', ownerDriverId: 'd', plateLabel: 'DEMO-1', make: 'a', model: 'b', year: 2019, synthetic: true,
+      inspectionValidUntil: '2027-04-30',
+    }],
   };
-  assert.deepEqual(inputsFromProfile(full), { licenseSince: '2016-05-01', vehicleYear: 2019 });
+  assert.deepEqual(inputsFromProfile(full, NOW), {
+    licenseSince: '2016-05-01', claimsLast5y: 0, penaltyPoints: 0, driverAge: 36,
+    vehicleYear: 2019, inspectionOverdue: false,
+  });
   const sparse: Profile = {
     driver: { id: 'd', displayName: 'x', licenseCategories: UNKNOWN, licenseSince: UNKNOWN, synthetic: true },
     vehicles: [],
   };
-  assert.deepEqual(inputsFromProfile(sparse), { licenseSince: null, vehicleYear: null });
-  assert.equal(profileRisk(inputsFromProfile(sparse), NOW).p, 1);
+  assert.deepEqual(inputsFromProfile(sparse, NOW), {
+    licenseSince: null, claimsLast5y: null, penaltyPoints: null, driverAge: null,
+    vehicleYear: null, inspectionOverdue: null,
+  });
+  assert.equal(profileRisk(inputsFromProfile(sparse, NOW), NOW).p, 1);
+});
+
+test('seed drivers get distinct, sensible coefficients', () => {
+  const p = (id: string) => {
+    const d = SEED_DRIVERS.find((x) => x.id === id)!;
+    const vehicles = SEED_VEHICLES.filter((v) => v.ownerDriverId === id);
+    return profileRisk(inputsFromProfile({ driver: d, vehicles }, NOW), NOW).p;
+  };
+  assert.ok(p('drv-001') < 1, 'experienced, clean driver should be below 1');
+  assert.ok(p('drv-002') > 1.2, 'new driver with an incident and an overdue inspection should be well above 1');
+  assert.equal(p('drv-003'), 1, 'driver with unknown data gets the neutral coefficient');
+  assert.equal(finalScore(72, profileRisk(inputsFromProfile({ driver: SEED_DRIVERS[2], vehicles: [] }, NOW), NOW)).final, 72);
 });
