@@ -346,8 +346,14 @@
   }
 
   .hero__actions {
-    width: 200px;
+    width: max-content;
+    min-width: 200px;
     margin-bottom: 12px;
+  }
+
+  /* Longer Latvian labels must not wrap inside the hero buttons. */
+  .hero__actions .btn {
+    white-space: nowrap;
   }
 }
 
