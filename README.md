@@ -25,7 +25,7 @@ This repository is a planning scaffold. App implementation has not started. The 
 
 ## Team roles
 
-- **A:** coordination, product decisions, and integration.
+- **A:** coordination, product decisions, integration, and merging reviewed PRs after checks pass.
 - **B:** mobile frontend and UI.
 - **C:** app data, persistence, and approved backend integration.
 - **D:** telematics KPIs, scoring, sample data, and QA.
