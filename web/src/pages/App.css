@@ -2225,3 +2225,34 @@
     height: 460px;
   }
 }
+
+/* Breaks: continuous driving timer and reminders */
+.break-cell--soon dd {
+  color: #b07a00;
+}
+
+.break-cell--due dd {
+  color: var(--color-accent-strong);
+}
+
+.break-banner {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.break-banner--soon {
+  background: rgba(232, 163, 23, 0.14);
+  color: #8a5d00;
+}
+
+.break-banner--due {
+  background: rgba(255, 69, 18, 0.12);
+  color: #b3261e;
+}
+
+.facts dd.is-warning {
+  color: var(--color-accent-strong);
+}

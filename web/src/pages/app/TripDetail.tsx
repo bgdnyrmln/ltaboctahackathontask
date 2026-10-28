@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router'
 import { TripReplayMap } from '../../components/TripReplayMap'
 import { useDriverData } from '../../demo/useDriverData'
 import { routeForTrip } from '../../demo/tripRoutes'
+import { BREAK_LIMIT_MIN, breakLimitLabel, fmtDuration } from '../../telemetry/breaks'
 
 const SOURCE_LABEL: Record<string, string> = {
   phone: 'Phone GPS',
@@ -180,8 +181,11 @@ export function TripDetail() {
                 </dd>
               </div>
               <div>
-                <dt>Longest stretch without a break</dt>
-                <dd>{fmt(trip.maxContinuousMin, 0)} min</dd>
+                <dt>Longest stretch without a break (limit {breakLimitLabel()})</dt>
+                <dd className={trip.maxContinuousMin > BREAK_LIMIT_MIN ? 'is-warning' : ''}>
+                  {fmtDuration(trip.maxContinuousMin)}
+                  {trip.maxContinuousMin > BREAK_LIMIT_MIN && ' · over the limit'}
+                </dd>
               </div>
               <div>
                 <dt>Night driving</dt>

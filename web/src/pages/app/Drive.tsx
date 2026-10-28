@@ -6,6 +6,7 @@ import { LiveTripMap } from '../../components/LiveTripMap'
 import { ObdConnect } from '../../components/ObdConnect'
 import { PhoneFrame } from '../../components/PhoneFrame'
 import { useDriverData } from '../../demo/useDriverData'
+import { breakLimitLabel, breakStatus, fmtDuration } from '../../telemetry/breaks'
 import { obdConnectedDevice, rpmFor } from '../../telemetry/obdLink'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
 import { SIMULATION_SPEEDUP } from '../../telemetry/simulatedDrive'
@@ -96,6 +97,10 @@ export function Drive() {
               <dt>Harsh accel.</dt>
               <dd>{stats?.harshAccels ?? 0}</dd>
             </div>
+            <div className={`break-cell break-cell--${breakStatus(stats?.continuousMin ?? 0)}`}>
+              <dt>Without a break</dt>
+              <dd>{fmtDuration(stats?.continuousMin ?? 0)}</dd>
+            </div>
             {obdConnectedDevice() && (
               <div>
                 <dt>Engine (OBD)</dt>
@@ -103,6 +108,13 @@ export function Drive() {
               </div>
             )}
           </dl>
+          {stats && breakStatus(stats.continuousMin) !== 'ok' && (
+            <p className={`break-banner break-banner--${breakStatus(stats.continuousMin)}`} role="alert">
+              {breakStatus(stats.continuousMin) === 'due'
+                ? `Time for a break: you have been driving ${fmtDuration(stats.continuousMin)} without a stop.`
+                : `Plan a break soon: ${breakLimitLabel()} without a stop is the limit.`}
+            </p>
+          )}
           <p className="muted live__gps">
             GPS accuracy: {stats?.accuracy != null ? `±${Math.round(stats.accuracy)} m` : '—'} · samples{' '}
             {stats?.samples ?? 0}
