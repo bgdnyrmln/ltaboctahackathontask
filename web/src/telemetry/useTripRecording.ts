@@ -1,6 +1,7 @@
 import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { isNativeMobileApp } from './platform'
+import { canRecordTrips, isPhoneSimulator } from './platform'
+import { startSimulatedDrive } from './simulatedDrive'
 import { TripRecorder, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
@@ -19,8 +20,12 @@ export function useTripRecording() {
   const watchId = useRef<number | null>(null)
   const wakeLock = useRef<WakeLockSentinelLike | null>(null)
   const ticker = useRef<number | null>(null)
+  const stopSimulation = useRef<(() => void) | null>(null)
+  const [routeDone, setRouteDone] = useState(false)
 
   const cleanup = useCallback(() => {
+    stopSimulation.current?.()
+    stopSimulation.current = null
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current)
     watchId.current = null
     if (ticker.current !== null) window.clearInterval(ticker.current)
@@ -32,9 +37,24 @@ export function useTripRecording() {
   useEffect(() => cleanup, [cleanup])
 
   const start = useCallback(async () => {
-    // Trips start only from the native mobile app, never from a desktop or browser.
-    if (!isNativeMobileApp()) {
+    // Trips start only on a phone (native app or the site's phone simulator), never on desktop.
+    if (!canRecordTrips()) {
       setStatus('unsupported')
+      return
+    }
+    setRouteDone(false)
+    if (isPhoneSimulator()) {
+      // No GPS in a desktop browser: drive a scripted Riga route through the same recorder.
+      setError(null)
+      recorder.current = new TripRecorder('synthetic')
+      setStatus('recording')
+      stopSimulation.current = startSimulatedDrive(
+        (fix) => {
+          recorder.current?.add(fix)
+          if (recorder.current) setStats(recorder.current.stats())
+        },
+        () => setRouteDone(true),
+      )
       return
     }
     if (!('geolocation' in navigator)) {
@@ -99,5 +119,5 @@ export function useTripRecording() {
     [cleanup],
   )
 
-  return { status, stats, error, start, stop }
+  return { status, stats, error, routeDone, start, stop }
 }

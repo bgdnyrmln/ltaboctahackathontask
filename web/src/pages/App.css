@@ -1042,3 +1042,16 @@
 .app-only > .btn {
   justify-self: center;
 }
+
+/* Desktop-only sidebar link to the phone + web live demo */
+.tabbar__extra {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .tabbar__extra {
+    display: flex;
+    margin-top: auto;
+    border: 1px dashed var(--color-border);
+  }
+}

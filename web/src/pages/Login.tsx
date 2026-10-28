@@ -1,7 +1,8 @@
 import { DEMO_LABEL, type DemoIdentityOption, type SignInError } from '@data'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { api, nextStepPath, useAuth } from '../auth/AuthContext'
+import { nextStepPath, useAuth } from '../auth/AuthContext'
+import { appApi } from '../auth/appApi'
 import { AppShell, Stepper } from '../components/AppShell'
 import './App.css'
 
@@ -27,10 +28,12 @@ export function Login() {
   const cancelled = useRef(false)
 
   useEffect(() => {
-    api.listDemoProfiles().then((list) => {
-      setOptions(list)
-      setSelected((current) => current || list[0]?.demoId || '')
-    })
+    appApi()
+      .listDemoProfiles()
+      .then((list) => {
+        setOptions(list)
+        setSelected((current) => current || list[0]?.demoId || '')
+      })
   }, [])
 
   // Signed in (already, or after the fake confirmation): continue where registration stopped.
