@@ -1,4 +1,4 @@
-import { OBD_DEMO_LABEL, SPEED_MAP_DEMO_LABEL } from '@data'
+import { SPEED_MAP_DEMO_LABEL } from '@data'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
@@ -30,10 +30,9 @@ function useIsDesktop() {
 
 export function Drive() {
   const { state } = useAuth()
-  const { addTrip, recordDemoObdTrip } = useDriverData()
+  const { addTrip } = useDriverData()
   const { status, stats, error, routeDone, start, stop } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
-  const [obdBusy, setObdBusy] = useState(false)
   const isDesktop = useIsDesktop()
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
@@ -52,16 +51,6 @@ export function Drive() {
     }
     await addTrip(trip)
     navigate('/app/trips', { state: { saved: trip.id } })
-  }
-
-  const runDemoDongle = async () => {
-    setObdBusy(true)
-    try {
-      const trip = await recordDemoObdTrip()
-      navigate('/app/trips', { state: { saved: trip.id } })
-    } finally {
-      setObdBusy(false)
-    }
   }
 
   if (active) {
@@ -119,18 +108,6 @@ export function Drive() {
     )
   }
 
-  const obdPanel = (
-    <section className="panel">
-      <h2 className="panel__title">Demo: connect a car</h2>
-      <p className="muted">
-        {OBD_DEMO_LABEL}. Plays a short scripted city drive through a mock OBD-II adapter and saves it.
-      </p>
-      <button type="button" className="btn btn--outline" onClick={runDemoDongle} disabled={obdBusy}>
-        {obdBusy ? 'Reading the dongle…' : 'Run demo drive'}
-      </button>
-    </section>
-  )
-
   // On a computer the web account cannot record; it shows the phone app instead.
   if (!canRecord && isDesktop) {
     return (
@@ -155,7 +132,6 @@ export function Drive() {
                 </li>
               </ol>
             </section>
-            {obdPanel}
           </div>
         </div>
       </div>
@@ -229,8 +205,6 @@ export function Drive() {
           </button>
         </section>
       )}
-
-      {obdPanel}
     </div>
   )
 }
