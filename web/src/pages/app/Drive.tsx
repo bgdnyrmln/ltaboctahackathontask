@@ -139,8 +139,8 @@ export function Drive() {
         <section className="panel drive-intro">
           {simulator ? (
             <p className="form-note">
-              <strong>Phone simulator.</strong> No real GPS here: Start trip drives a scripted route through Riga. Watch
-              it on the map next to this phone.
+              <strong>Phone simulator.</strong> No real GPS here: Start trip drives a random fake trip through Riga.
+              Watch it on the map next to this phone.
             </p>
           ) : (
             <>
