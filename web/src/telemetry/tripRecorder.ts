@@ -32,6 +32,7 @@ export type LiveStats = {
   secTooSlow: number
   harshBrakes: number
   harshAccels: number
+  continuousMin: number // longest stretch without a 15-min stop so far
   accuracy: number | null
   samples: number
   rejected: number
@@ -175,6 +176,7 @@ export class TripRecorder {
       secTooSlow: Math.round(this.secTooSlow),
       harshBrakes: summary?.harshBrakeCount ?? 0,
       harshAccels: summary?.harshAccelCount ?? 0,
+      continuousMin: summary?.maxContinuousMin ?? 0,
       accuracy: this.accuracy,
       samples: this.samples.length,
       rejected: this.rejected,
