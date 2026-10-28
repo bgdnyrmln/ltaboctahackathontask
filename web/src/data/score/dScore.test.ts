@@ -3,10 +3,10 @@ import { test } from 'node:test';
 import type { TripSummary, TripTotals } from '../trips/types.ts';
 import {
   PEAK_CAP,
-  confidenceWithLimits,
   createDScore,
   dScore,
   isValidTotals,
+  limitsApproximate,
   speedingSeverityShare,
 } from './dScore.ts';
 
@@ -97,7 +97,7 @@ test('under 30 km never produces a score', () => {
   assert.equal(r.confidence, 'insufficient');
 });
 
-test('approximate speed limits lower confidence, not the score', () => {
+test('approximate speed limits raise a flag, not the score or the confidence level', () => {
   const withMap = [trip('map'), trip('map')];
   const approx = [trip('road_type_default'), trip('unknown')];
   const t = totals();
@@ -105,9 +105,11 @@ test('approximate speed limits lower confidence, not the score', () => {
   const b = dScore(t, approx);
   assert.equal(a.score, b.score);
   assert.equal(a.confidence, 'medium');
-  assert.equal(b.confidence, 'low');
-  assert.equal(confidenceWithLimits('insufficient', approx), 'insufficient');
-  assert.equal(confidenceWithLimits('low', approx), 'low');
+  assert.equal(b.confidence, 'medium');
+  assert.equal(a.limitsApproximate, false);
+  assert.equal(b.limitsApproximate, true);
+  assert.equal(limitsApproximate([]), false);
+  assert.equal(limitsApproximate([trip('map', 100), trip('road_type_default', 50)]), false);
 });
 
 test('more harsh events never raise the score', () => {

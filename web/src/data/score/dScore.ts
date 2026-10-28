@@ -110,13 +110,10 @@ function mapLimitShare(trips: TripSummary[]): number {
   return trips.filter((t) => t.speedLimitSource === 'map').reduce((s, t) => s + t.distanceKm, 0) / km;
 }
 
-const LEVELS: Confidence[] = ['insufficient', 'low', 'medium', 'high'];
-
-// Approximate road-type limits make speeding less certain; the score itself is unchanged.
-export function confidenceWithLimits(base: Confidence, trips: TripSummary[]): Confidence {
-  if (base === 'insufficient' || trips.length === 0) return base;
-  if (mapLimitShare(trips) >= MAP_LIMIT_SHARE_MIN) return base;
-  return LEVELS[Math.max(1, LEVELS.indexOf(base) - 1)];
+// Road-type default limits make the speeding KPI less certain. That is reported as a flag, not folded
+// into the confidence level, because the level tells the driver how much data we have.
+export function limitsApproximate(trips: TripSummary[]): boolean {
+  return trips.length > 0 && mapLimitShare(trips) < MAP_LIMIT_SHARE_MIN;
 }
 
 // smoothing = 1 blends one prior's worth of typical driving into small samples; 0 disables it.
@@ -130,7 +127,7 @@ export function createDScore(smoothing = 1): ScoreFn {
       : withPhone
         ? D_WEIGHTS_WITH_PHONE
         : { ...D_WEIGHTS, phone_use_share: 0, too_slow_share: 0 };
-    const confidence = valid ? confidenceWithLimits(confidenceOf(totals), trips) : 'insufficient';
+    const confidence: Confidence = valid ? confidenceOf(totals) : 'insufficient';
 
     const kpis: KpiResult[] = KPI_DEFS.map((def, i) => {
       const isSpeeding = i === 0;
@@ -222,7 +219,13 @@ export function createDScore(smoothing = 1): ScoreFn {
     if (score !== null && totals.drivingSec > 0 && totals.secOverPct40 / totals.drivingSec >= PEAK_SHARE) {
       score = Math.min(score, PEAK_CAP);
     }
-    return { score, confidence, band: score === null ? null : bandOf(score), kpis };
+    return {
+      score,
+      confidence,
+      band: score === null ? null : bandOf(score),
+      kpis,
+      limitsApproximate: limitsApproximate(trips),
+    };
   };
 }
 
