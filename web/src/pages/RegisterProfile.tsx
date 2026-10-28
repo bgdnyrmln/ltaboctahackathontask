@@ -21,7 +21,7 @@ export function RegisterProfile() {
         <div className="auth-card">
           <h1 className="auth-card__title">Is this you?</h1>
           <p className="auth-card__lead">
-            Loaded from the demo registry (CSDD-style mock). Nothing here affects your driving score.
+            Loaded from the demo registry (CSDD-style mock). Nothing here changes your behaviour score; it only adjusts the separate &quot;with profile&quot; number.
           </p>
           <ProfileDetails profile={state.profile} />
           <div className="auth-card__actions">

@@ -32,6 +32,9 @@ export interface ScoreResult {
   confidence: Confidence; // separate from the score: missing data never lowers it
   band: RiskBand | null;
   kpis: KpiResult[];
+  // Most trips use approximate speed limits (road-type defaults), so speeding is less certain.
+  // Shown as a note; it never changes the score or the confidence level.
+  limitsApproximate?: boolean;
 }
 
 export type ScoreFn = (totals: TripTotals, trips: TripSummary[]) => ScoreResult;

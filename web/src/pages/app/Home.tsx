@@ -79,6 +79,9 @@ export function Home() {
             {result.score !== null && (
               <p className={`confidence confidence--${result.confidence}`}>{CONFIDENCE_TEXT[result.confidence]}</p>
             )}
+            {result.score !== null && result.limitsApproximate && (
+              <p className="confidence confidence--limits">Speed limits are approximate (demo map).</p>
+            )}
           </section>
 
           {tips.map((tip) => (
@@ -156,7 +159,7 @@ export function Home() {
       </div>
 
       <p className="provisional-note">
-        Interim scoring from the team's draft spec. Weights and thresholds are not final.
+        Weights and thresholds are illustrative, not final.
       </p>
     </div>
   )
