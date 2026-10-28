@@ -22,7 +22,6 @@ const base: TripTotals = {
   secOverPct10: 0,
   secOverPct20: 0,
   secOverPct40: 0,
-  secPhoneUse: 0,
   harshBrakeCount: 0,
   harshAccelCount: 0,
   nightKm: 0,
