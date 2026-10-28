@@ -12,9 +12,12 @@ export interface TripSummary {
   endedAt: string; // ISO 8601
   distanceKm: number;
   drivingSec: number; // time moving
-  secOverLimit: number; // above limit + tolerance
+  secOverLimit: number; // above limit + tolerance max(3 km/h, 5% of limit)
   secOver10: number; // more than 10 km/h over
   secOver20: number; // more than 20 km/h over
+  secOverPct10: number; // more than 10% over the limit (see speeding.ts)
+  secOverPct20: number; // more than 20% over
+  secOverPct40: number; // more than 40% over
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number; // 23:00-05:00
@@ -38,6 +41,9 @@ export interface TripTotals {
   secOverLimit: number;
   secOver10: number;
   secOver20: number;
+  secOverPct10: number;
+  secOverPct20: number;
+  secOverPct40: number;
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number;

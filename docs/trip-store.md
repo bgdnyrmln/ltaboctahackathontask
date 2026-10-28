@@ -18,7 +18,8 @@ D: `TripTotals` -> KPIs -> Driver Score
 | `startedAt`, `endedAt` | ISO 8601 | trip start and end |
 | `distanceKm` | number >= 0 | distance |
 | `drivingSec` | number >= 0 | time moving |
-| `secOverLimit`, `secOver10`, `secOver20` | number >= 0 | seconds over limit (+ tolerance), over by >10, over by >20 km/h; must satisfy over20 <= over10 <= overLimit <= drivingSec |
+| `secOverLimit`, `secOver10`, `secOver20` | number >= 0 | seconds over limit (+ tolerance max(3 km/h, 5% of limit)), over by >10, over by >20 km/h; must satisfy over20 <= over10 <= overLimit <= drivingSec |
+| `secOverPct10`, `secOverPct20`, `secOverPct40` | number >= 0 | seconds more than 10%, 20%, 40% over the limit (r = (speed - limit) / limit); must satisfy pct40 <= pct20 <= pct10 <= overLimit. Older stored trips load with 0. Computed by `speedingBands` in `trips/speeding.ts` |
 | `harshBrakeCount`, `harshAccelCount` | integer >= 0 | harsh events |
 | `nightKm` | number, <= distanceKm | km driven 23:00-05:00 |
 | `maxContinuousMin` | number, <= trip duration | longest stretch without a stop over 15 min; fatigue context only |
@@ -34,6 +35,7 @@ Example:
   "startedAt": "2026-10-20T08:00:00Z", "endedAt": "2026-10-20T08:30:00Z",
   "distanceKm": 20, "drivingSec": 1500,
   "secOverLimit": 120, "secOver10": 40, "secOver20": 5,
+  "secOverPct10": 60, "secOverPct20": 40, "secOverPct40": 5,
   "harshBrakeCount": 2, "harshAccelCount": 1, "nightKm": 0,
   "maxContinuousMin": 15, "coverage": 0.95, "speedLimitSource": "road_type_default", "source": "synthetic"
 }
