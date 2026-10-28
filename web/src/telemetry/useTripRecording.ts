@@ -1,4 +1,4 @@
-import type { TripSummary } from '@trips'
+import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { TripRecorder, type LiveStats } from './tripRecorder'
 

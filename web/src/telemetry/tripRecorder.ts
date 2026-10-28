@@ -1,7 +1,7 @@
 // Turns live phone GPS samples into one TripSummary (Agent C's storage shape), using
 // the measurement rules from docs/driver-score-spec-draft.md. Raw positions are only
 // held in memory while recording and are never stored (data minimisation).
-import type { TripSummary } from '@trips'
+import type { TripSummary } from '@data'
 
 export type GpsSample = {
   t: number // epoch ms
@@ -38,6 +38,7 @@ const RURAL_LIMIT = 90
 const RURAL_AFTER_SEC = 60 // sustained >70 km/h switches the default limit to rural
 const MIN_TRIP_KM = 1
 const MIN_TRIP_SEC = 180
+const STOP_BREAK_MS = 15 * 60 * 1000 // a stop this long ends a continuous stretch
 
 function haversineKm(a: GpsSample, b: GpsSample) {
   const R = 6371
@@ -66,15 +67,15 @@ export class TripRecorder {
   private distanceKm = 0
   private nightKm = 0
   private drivingSec = 0
-  private continuousDrivingSec = 0
-  private maxContinuousDrivingSec = 0
-  private stoppedSec = 0
   private validSec = 0
   private secOverLimit = 0
   private secOver10 = 0
   private secOver20 = 0
   private harshBrakeCount = 0
   private harshAccelCount = 0
+  private stretchStart: number | null = null
+  private stopSince: number | null = null
+  private maxContinuousMin = 0
   private samples = 0
   private rejected = 0
   private speedKmh = 0
@@ -98,8 +99,6 @@ export class TripRecorder {
       // Gap in data: count the distance but not the time as valid coverage.
       this.distanceKm += haversineKm(prev, sample)
       this.lastSpeedMs = 0
-      this.continuousDrivingSec = 0
-      this.stoppedSec = 0
       return
     }
 
@@ -117,17 +116,16 @@ export class TripRecorder {
     if (isNight(sample.t)) this.nightKm += segKm
 
     if (kmh < MOVING_KMH) {
-      this.stoppedSec += dt
-      if (this.stoppedSec >= 15 * 60) this.continuousDrivingSec = 0
+      this.stopSince ??= sample.t
+      if (sample.t - this.stopSince >= STOP_BREAK_MS) this.stretchStart = null
       this.lastSpeedMs = speedMs
       this.brakeRun = this.accelRun = 0
       return
     }
-    if (this.stoppedSec >= 15 * 60) this.continuousDrivingSec = 0
-    this.stoppedSec = 0
     this.drivingSec += dt
-    this.continuousDrivingSec += dt
-    this.maxContinuousDrivingSec = Math.max(this.maxContinuousDrivingSec, this.continuousDrivingSec)
+    this.stopSince = null
+    this.stretchStart ??= sample.t
+    this.maxContinuousMin = Math.max(this.maxContinuousMin, (sample.t - this.stretchStart) / 60000)
 
     // Road-type default limit: urban 50 unless sustained >70 km/h, then rural 90.
     if (kmh > 70) {
@@ -199,7 +197,7 @@ export class TripRecorder {
       harshBrakeCount: this.harshBrakeCount,
       harshAccelCount: this.harshAccelCount,
       nightKm: Math.min(Math.round(this.nightKm * 100) / 100, distanceKm),
-      maxContinuousMin: Math.round(this.maxContinuousDrivingSec / 60),
+      maxContinuousMin: Math.min(Math.round(this.maxContinuousMin), Math.floor(elapsedSec / 60)),
       coverage: Math.round(Math.min(1, this.validSec / Math.max(1, elapsedSec)) * 100) / 100,
       speedLimitSource: 'road_type_default',
       source: 'phone',

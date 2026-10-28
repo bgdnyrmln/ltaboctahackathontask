@@ -15,10 +15,8 @@ const TABS = [
 export function AppLayout() {
   const { state } = useAuth()
   if (state.status !== 'signedIn') return null
-  const { driver, vehicles } = state.profile
-
   return (
-    <DriverDataProvider driverId={driver.id} vehicleId={vehicles[0]?.id ?? null}>
+    <DriverDataProvider>
       <div className="mobile-app">
         <header className="mobile-app__bar">
           <Logo />
