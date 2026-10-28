@@ -187,6 +187,15 @@ export function createApi(options: ApiOptions = {}): OctaApi {
       await trips.save([trip]);
       return trip;
     },
+
+    // Only the signed-in driver's own trips; throws TripValidationError on bad data.
+    async saveTrip(trip) {
+      const { driver } = await requireProfile();
+      if (trip.driverId !== driver.id) throw new Error(`Trip ${trip.id} belongs to another driver`);
+      await ensureSeeded();
+      await trips.save([trip]);
+      return trip;
+    },
   };
 }
 
