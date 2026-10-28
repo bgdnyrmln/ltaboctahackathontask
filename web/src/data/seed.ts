@@ -1,19 +1,28 @@
 import { UNKNOWN } from './types.ts';
 import type { Driver, Vehicle } from './types.ts';
 
+// Profiles differ on purpose so D's profile coefficient has something to show:
+// Anna is experienced with a clean record, Janis is a new driver with one
+// incident and penalty points, Marta has unknown fields ("no data" path).
 export const SEED_DRIVERS: Driver[] = [
   {
     id: 'drv-001',
     displayName: 'Demo Driver Anna',
     licenseCategories: ['B'],
     licenseSince: '2016-05-01',
+    claimsLast5y: 0,
+    penaltyPoints: 0,
+    birthYear: 1991,
     synthetic: true,
   },
   {
     id: 'drv-002',
     displayName: 'Demo Driver Janis',
-    licenseCategories: ['B', 'C'],
-    licenseSince: '2009-09-15',
+    licenseCategories: ['B'],
+    licenseSince: '2025-03-10', // under 2 years on the demo date
+    claimsLast5y: 1,
+    penaltyPoints: 4,
+    birthYear: 2005,
     synthetic: true,
   },
   {
@@ -22,6 +31,9 @@ export const SEED_DRIVERS: Driver[] = [
     displayName: 'Demo Driver Marta',
     licenseCategories: UNKNOWN,
     licenseSince: UNKNOWN,
+    claimsLast5y: UNKNOWN,
+    penaltyPoints: UNKNOWN,
+    birthYear: UNKNOWN,
     synthetic: true,
   },
 ];
@@ -34,6 +46,7 @@ export const SEED_VEHICLES: Vehicle[] = [
     make: 'Skoda',
     model: 'Octavia',
     year: 2019,
+    inspectionValidUntil: '2027-04-30',
     synthetic: true,
   },
   {
@@ -43,6 +56,7 @@ export const SEED_VEHICLES: Vehicle[] = [
     make: 'Volvo',
     model: 'V60',
     year: 2021,
+    inspectionValidUntil: '2026-09-30', // overdue on the demo date
     synthetic: true,
   },
   {
@@ -52,6 +66,7 @@ export const SEED_VEHICLES: Vehicle[] = [
     make: UNKNOWN,
     model: UNKNOWN,
     year: UNKNOWN,
+    inspectionValidUntil: UNKNOWN,
     synthetic: true,
   },
 ];
