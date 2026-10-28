@@ -1,103 +1,167 @@
-import { getSpeedLimitMap, SPEED_MAP_DEMO_LABEL, type LatLon } from '@data'
-import { useEffect, useMemo, useState } from 'react'
+import { getSpeedLimitMap, SPEED_MAP_DEMO_LABEL } from '@data'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { onLiveTrip, type LiveTripMessage } from '../telemetry/liveChannel'
+import { ROUTE } from '../telemetry/simulatedDrive'
 
-// Offline map of central Riga drawn from Agent C's speed limit map (no tiles, so
-// it works without internet). Shows the trip driven on the phone live: trail
-// coloured by speeding, the car, and harsh braking/acceleration pins.
+// Real map (OpenStreetMap tiles, no API key) next to the phone. Shows the
+// trip driven on the phone live: trail coloured by speeding, the car, speed limit
+// signs as zones change, and harsh braking/acceleration pins. Overlays still work
+// if the basemap tiles cannot load.
 
-const BOUNDS = { latMin: 56.913, latMax: 56.959, lonMin: 24.086, lonMax: 24.193 }
-const W = 1000
-const COS = Math.cos((((BOUNDS.latMin + BOUNDS.latMax) / 2) * Math.PI) / 180)
-const K = W / ((BOUNDS.lonMax - BOUNDS.lonMin) * COS)
-const H = Math.round((BOUNDS.latMax - BOUNDS.latMin) * K)
+const OK_COLOR = '#2e9e3a'
+const OVER_COLOR = '#ff4512'
+const SIGN_AFTER_FIXES = 30
 
-const px = (p: LatLon) => ({ x: (p.lon - BOUNDS.lonMin) * COS * K, y: (BOUNDS.latMax - p.lat) * K })
-const path = (points: LatLon[], close = false) =>
-  points.map((p, i) => `${i ? 'L' : 'M'}${px(p).x.toFixed(1)},${px(p).y.toFixed(1)}`).join(' ') + (close ? ' Z' : '')
-
-// Decorative river line, approximate (the map is illustrative, not road-accurate).
-const DAUGAVA: LatLon[] = [
-  { lat: 56.957, lon: 24.093 },
-  { lat: 56.946, lon: 24.097 },
-  { lat: 56.9395, lon: 24.105 },
-  { lat: 56.9335, lon: 24.121 },
-  { lat: 56.9275, lon: 24.14 },
-  { lat: 56.92, lon: 24.162 },
-  { lat: 56.912, lon: 24.18 },
-]
-
-// Where to show the city-wide 50 sign (an empty part of the map).
-const RIGA_SIGN: LatLon = { lat: 56.9205, lon: 24.1 }
-
-type TrailPoint = LatLon & { over: boolean }
-type Pin = LatLon & { kind: 'brake' | 'accel' }
 type Live = Extract<LiveTripMessage, { type: 'fix' }>
 type Summary = Extract<LiveTripMessage, { type: 'end' }>
 
-function centroid(points: LatLon[]): LatLon {
-  return {
-    lat: points.reduce((s, p) => s + p.lat, 0) / points.length,
-    lon: points.reduce((s, p) => s + p.lon, 0) / points.length,
-  }
-}
+const icon = (html: string, size: [number, number], anchor: [number, number]) =>
+  L.divIcon({ html, className: 'ltm-icon', iconSize: size, iconAnchor: anchor })
 
-function LimitSign({ at, xy, limit }: { at?: LatLon; xy?: { x: number; y: number }; limit: number }) {
-  const { x, y } = xy ?? px(at!)
-  return (
-    <g className="ltm-sign" transform={`translate(${x},${y})`}>
-      <circle r="22" />
-      <text dy="7">{limit}</text>
-    </g>
+const carIcon = icon('<span class="ltm-car"><span></span></span>', [28, 28], [14, 14])
+const signIcon = (limit: number) => icon(`<span class="ltm-sign">${limit}</span>`, [34, 34], [17, 17])
+const pinIcon = (kind: 'brake' | 'accel') =>
+  icon(
+    `<span class="ltm-pin ltm-pin--${kind}"><b>${kind === 'brake' ? '!' : '↑'}</b><em>${
+      kind === 'brake' ? 'Harsh braking' : 'Harsh acceleration'
+    }</em></span>`,
+    [30, 38],
+    [15, 38],
   )
-}
-
-// Sign position next to a road: offset sideways from the segment's midpoint so it
-// does not sit under the trail.
-function roadSignAt(points: LatLon[]): { x: number; y: number } {
-  const i = Math.max(1, Math.floor(points.length / 2))
-  const a = px(points[i - 1])
-  const b = px(points[i])
-  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1
-  return { x: (a.x + b.x) / 2 + ((b.y - a.y) / len) * 44, y: (a.y + b.y) / 2 - ((b.x - a.x) / len) * 44 }
-}
 
 export function LiveTripMap() {
+  const el = useRef<HTMLDivElement>(null)
+  const map = useRef<L.Map | null>(null)
+  const tripLayer = useRef<L.LayerGroup | null>(null)
+  const trail = useRef<{ line: L.Polyline | null; over: boolean | null; last: L.LatLng | null }>({
+    line: null,
+    over: null,
+    last: null,
+  })
+  const car = useRef<L.Marker | null>(null)
+  const lastLimit = useRef<number | null>(null)
+  // A new limit sign appears only after the limit has held for a few fixes (no flicker).
+  const pendingLimit = useRef<{ limit: number; at: L.LatLng; count: number } | null>(null)
+  const counts = useRef({ fixes: 0, over: 0 })
+
   const [status, setStatus] = useState<'idle' | 'live' | 'done'>('idle')
-  const [trail, setTrail] = useState<TrailPoint[]>([])
-  const [pins, setPins] = useState<Pin[]>([])
   const [live, setLive] = useState<Live | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
-  const features = useMemo(() => getSpeedLimitMap().features(), [])
+  const [overShare, setOverShare] = useState(0)
 
+  // Build the map once.
+  useEffect(() => {
+    if (!el.current || map.current) return
+    const m = L.map(el.current, { scrollWheelZoom: false, zoomControl: true, attributionControl: true })
+    // Standard OpenStreetMap tiles: no API key. Toned to grey in CSS to match the site.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(m)
+
+    // Speed limit zones from the demo map (Old Riga 30).
+    for (const f of getSpeedLimitMap().features()) {
+      if (f.type !== 'zone' || f.id === 'zone-riga') continue
+      L.polygon(
+        f.points.map((p) => [p.lat, p.lon] as L.LatLngTuple),
+        { color: '#ff6d45', weight: 2, dashArray: '6 6', fillColor: '#ff6d45', fillOpacity: 0.08 },
+      )
+        .bindTooltip(`${f.name} · ${f.limitKmh} km/h`, { permanent: true, direction: 'left', className: 'ltm-tip' })
+        .addTo(m)
+    }
+
+    // The planned route, faint, so viewers see where the drive goes.
+    const planned = L.polyline(ROUTE, { color: '#7d8796', weight: 4, opacity: 0.45, dashArray: '2 9' }).addTo(m)
+    m.fitBounds(planned.getBounds(), { padding: [36, 36] })
+    tripLayer.current = L.layerGroup().addTo(m)
+    map.current = m
+
+    const ro = new ResizeObserver(() => m.invalidateSize())
+    ro.observe(el.current)
+    return () => {
+      ro.disconnect()
+      m.remove()
+      map.current = null
+    }
+  }, [])
+
+  // Follow the live feed from the phone.
   useEffect(
     () =>
-      onLiveTrip((m) => {
-        if (m.type === 'start') {
+      onLiveTrip((msg) => {
+        const layer = tripLayer.current
+        if (!layer) return
+        if (msg.type === 'start') {
+          layer.clearLayers()
+          trail.current = { line: null, over: null, last: null }
+          car.current = null
+          lastLimit.current = null
+          pendingLimit.current = null
+          counts.current = { fixes: 0, over: 0 }
           setStatus('live')
-          setTrail([])
-          setPins([])
           setLive(null)
           setSummary(null)
-        } else if (m.type === 'fix') {
-          setStatus('live')
-          setLive(m)
-          setTrail((t) => [...t, { lat: m.lat, lon: m.lon, over: m.overLimit }])
-        } else if (m.type === 'event') {
-          setPins((p) => [...p, { lat: m.lat, lon: m.lon, kind: m.kind }])
-        } else if (m.type === 'end') {
-          setStatus('done')
-          setSummary(m)
+          setOverShare(0)
+          return
         }
+        if (msg.type === 'fix') {
+          const at = L.latLng(msg.lat, msg.lon)
+          const t = trail.current
+          if (t.line && t.over === msg.overLimit) {
+            t.line.addLatLng(at)
+          } else {
+            // New colour run, starting where the previous one ended so the trail stays continuous.
+            t.line = L.polyline(t.last ? [t.last, at] : [at], {
+              color: msg.overLimit ? OVER_COLOR : OK_COLOR,
+              weight: 7,
+              opacity: 0.95,
+              lineCap: 'round',
+              lineJoin: 'round',
+            }).addTo(layer)
+            t.over = msg.overLimit
+          }
+          t.last = at
+          if (msg.limitKmh === lastLimit.current) {
+            pendingLimit.current = null
+          } else {
+            const p = pendingLimit.current
+            pendingLimit.current =
+              p && p.limit === msg.limitKmh ? { ...p, count: p.count + 1 } : { limit: msg.limitKmh, at, count: 1 }
+            if (lastLimit.current === null) {
+              // First limit of the trip: shown in the readout and zone label, no sign needed.
+              lastLimit.current = msg.limitKmh
+              pendingLimit.current = null
+            } else if (pendingLimit.current.count >= SIGN_AFTER_FIXES) {
+              L.marker(pendingLimit.current.at, {
+                icon: signIcon(msg.limitKmh),
+                interactive: false,
+                zIndexOffset: 500,
+              }).addTo(layer)
+              lastLimit.current = msg.limitKmh
+              pendingLimit.current = null
+            }
+          }
+          if (!car.current) car.current = L.marker(at, { icon: carIcon, zIndexOffset: 1000 }).addTo(layer)
+          else car.current.setLatLng(at)
+          counts.current.fixes++
+          if (msg.overLimit) counts.current.over++
+          setStatus('live')
+          setLive(msg)
+          setOverShare(Math.round((counts.current.over / counts.current.fixes) * 100))
+          return
+        }
+        if (msg.type === 'event') {
+          L.marker([msg.lat, msg.lon], { icon: pinIcon(msg.kind), zIndexOffset: 800 }).addTo(layer)
+          return
+        }
+        setStatus('done')
+        setSummary(msg)
       }),
     [],
   )
-
-  const zones = features.filter((f) => f.type === 'zone' && f.id !== 'zone-riga')
-  const roads = features.filter((f) => f.type === 'segment')
-  const car = trail[trail.length - 1]
-  const overShare = trail.length ? Math.round((trail.filter((p) => p.over).length / trail.length) * 100) : 0
 
   return (
     <section className="panel ltm" aria-label="Live trip map">
@@ -109,85 +173,7 @@ export function LiveTripMap() {
       </div>
 
       <div className="ltm__stage">
-        <svg viewBox={`0 0 ${W} ${H}`} className="ltm__map" role="img" aria-label="Map of central Riga with the trip">
-          <rect width={W} height={H} className="ltm-city" />
-          <path d={path(DAUGAVA)} className="ltm-river" />
-          <text
-            x={px({ lat: 56.9235, lon: 24.13 }).x}
-            y={px({ lat: 56.9235, lon: 24.13 }).y}
-            className="ltm-label ltm-label--river"
-          >
-            Daugava
-          </text>
-
-          {zones.map((z) => (
-            <g key={z.id}>
-              <path d={path(z.points, true)} className="ltm-zone" />
-              <text x={px(centroid(z.points)).x} y={px(centroid(z.points)).y - 34} className="ltm-label">
-                {z.name}
-              </text>
-              <LimitSign at={centroid(z.points)} limit={z.limitKmh} />
-            </g>
-          ))}
-
-          {roads.map((r) => (
-            <g key={r.id}>
-              <path d={path(r.points)} className="ltm-road-casing" />
-              <path d={path(r.points)} className="ltm-road" />
-            </g>
-          ))}
-
-          {trail.slice(1).map((p, i) => {
-            const a = px(trail[i])
-            const b = px(p)
-            return (
-              <line
-                key={i}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                className={p.over ? 'ltm-trail ltm-trail--over' : 'ltm-trail'}
-              />
-            )
-          })}
-
-          {roads.map((r) => {
-            const sign = roadSignAt(r.points)
-            return (
-              <g key={`${r.id}-label`}>
-                <LimitSign xy={sign} limit={r.limitKmh} />
-                <text x={sign.x + 30} y={sign.y + 7} className="ltm-label ltm-label--road">
-                  {r.name}
-                </text>
-              </g>
-            )
-          })}
-          <LimitSign at={RIGA_SIGN} limit={50} />
-          <text x={px(RIGA_SIGN).x + 30} y={px(RIGA_SIGN).y + 7} className="ltm-label ltm-label--road">
-            Riga built-up area
-          </text>
-
-          {pins.map((p, i) => {
-            const { x, y } = px(p)
-            return (
-              <g key={i} className={`ltm-pin ltm-pin--${p.kind}`} transform={`translate(${x},${y})`}>
-                <path d="M0,0 C-14,-18 -14,-34 0,-34 C14,-34 14,-18 0,0 Z" />
-                <text y="-17">{p.kind === 'brake' ? '!' : '↑'}</text>
-                <text y="-44" className="ltm-pin__label">
-                  {p.kind === 'brake' ? 'Harsh braking' : 'Harsh acceleration'}
-                </text>
-              </g>
-            )
-          })}
-
-          {car && status === 'live' && (
-            <g transform={`translate(${px(car).x},${px(car).y})`}>
-              <circle r="22" className="ltm-car-pulse" />
-              <circle r="11" className="ltm-car" />
-            </g>
-          )}
-        </svg>
+        <div ref={el} className="ltm__leaflet" />
 
         {status === 'idle' && (
           <div className="ltm__overlay">
@@ -205,6 +191,9 @@ export function LiveTripMap() {
             </p>
             <p className="ltm__limit">
               Limit {live.limitKmh} · {live.limitName ?? 'road-type default'}
+            </p>
+            <p className="ltm__limit">
+              {live.distanceKm.toFixed(2)} km · over the limit {overShare}%
             </p>
           </div>
         )}
@@ -230,10 +219,7 @@ export function LiveTripMap() {
         <span className="ltm-key ltm-key--over">Over limit</span>
         <span className="ltm-key ltm-key--brake">Harsh braking</span>
         <span className="ltm-key ltm-key--accel">Harsh acceleration</span>
-        <span className="ltm__note">
-          {live ? `${live.distanceKm.toFixed(2)} km · ` : ''}
-          {SPEED_MAP_DEMO_LABEL}. Positions are shown live only, never stored.
-        </span>
+        <span className="ltm__note">{SPEED_MAP_DEMO_LABEL}. Positions are shown live only, never stored.</span>
       </div>
     </section>
   )
