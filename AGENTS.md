@@ -50,7 +50,7 @@ If any gate cannot be verified, leave the PR open and the task in Review, then r
 
 ## Coordination
 
-Use Notion as the shared record. Record plan, decisions, changed files, checks, blocker, and handoff on the task. Notion updates do not wake inactive agents; use a verified scheduler or manual check. Never put secrets in the repository or Notion.
+Use Notion as the shared record. Workers B, C, and D check only their saved agent-filtered task view; do not scan or claim other agents' tasks. Agent A coordinates across the full board and uses per-agent views when assigning or reviewing. Record plan, decisions, changed files, checks, blocker, and handoff on the task. Notion updates do not wake inactive agents; use a verified scheduler or manual check. Never put secrets in the repository or Notion.
 
 ### Default team roles
 
