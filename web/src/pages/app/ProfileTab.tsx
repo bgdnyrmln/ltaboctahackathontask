@@ -8,7 +8,7 @@ import { useDriverData } from '../../demo/useDriverData'
 const P_RANGE = '0.8–1.3'
 
 export function ProfileTab() {
-  const { state, signOut, markSignedOut } = useAuth()
+  const { state, signOut, markSignedOut, giveConsent } = useAuth()
   const { trips, deleteMyData } = useDriverData()
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
@@ -54,10 +54,18 @@ export function ProfileTab() {
 
         <section className="panel">
           <h2 className="panel__title">Privacy</h2>
-          <p className="muted">
-            {trips.length} recent trip summaries stored on this device. Weekly summary sharing:{' '}
-            {consent?.shareSummary ? 'on (simulated)' : 'off'}.
-          </p>
+          <p className="muted">{trips.length} recent trip summaries stored on this device.</p>
+          <label className="share-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(consent?.shareSummary)}
+              onChange={(e) => giveConsent(e.target.checked)}
+            />
+            <span>
+              <strong>Share my weekly score with Demo Insurer AS</strong>
+              <small>Weekly scores and totals only, never trips or locations. Shows up in the insurer portal.</small>
+            </span>
+          </label>
           {!confirming ? (
             <button type="button" className="btn btn--outline" onClick={() => setConfirming(true)}>
               Delete my trip data
