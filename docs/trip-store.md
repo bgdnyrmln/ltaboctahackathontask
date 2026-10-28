@@ -21,6 +21,7 @@ D: `TripTotals` -> KPIs -> Driver Score
 | `secOverLimit`, `secOver10`, `secOver20` | number >= 0 | seconds over limit (+ tolerance), over by >10, over by >20 km/h; must satisfy over20 <= over10 <= overLimit <= drivingSec |
 | `harshBrakeCount`, `harshAccelCount` | integer >= 0 | harsh events |
 | `nightKm` | number, <= distanceKm | km driven 23:00-05:00 |
+| `maxContinuousMin` | number, <= trip duration | longest stretch without a stop over 15 min; fatigue context only |
 | `coverage` | 0..1 | share of trip with valid data |
 | `speedLimitSource` | `map`, `road_type_default`, `unknown` | where limits came from, feeds confidence |
 | `source` | `synthetic`, `obd_mock`, `obd`, `phone` | data origin |
@@ -34,7 +35,7 @@ Example:
   "distanceKm": 20, "drivingSec": 1500,
   "secOverLimit": 120, "secOver10": 40, "secOver20": 5,
   "harshBrakeCount": 2, "harshAccelCount": 1, "nightKm": 0,
-  "coverage": 0.95, "speedLimitSource": "road_type_default", "source": "synthetic"
+  "maxContinuousMin": 15, "coverage": 0.95, "speedLimitSource": "road_type_default", "source": "synthetic"
 }
 ```
 
