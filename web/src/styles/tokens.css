@@ -1,0 +1,39 @@
+/* Design tokens. Visual language follows balcia.lv (colors, type, radii);
+   product branding is Fake OCTA Coach. */
+:root {
+  --color-accent: #ff6d45;
+  --color-accent-strong: #ff4512;
+  --color-accent-soft: #ffd4b5;
+  --color-accent-tint: rgba(255, 90, 0, 0.1);
+  --color-cyan: #84e0e7;
+  --color-text: #333333;
+  --color-text-muted: #565554;
+  --color-text-faint: rgba(51, 51, 51, 0.6);
+  --color-bg: #f8f9fb;
+  --color-surface: #ffffff;
+  --color-border: #dbe2ea;
+  --color-band: #5f6060;
+  --color-footer: #333333;
+  --color-success: #62de59;
+  --color-danger: #eb5757;
+  --color-on-dark: #ffffff;
+
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+
+  --radius-card: 8px;
+  --radius-pill: 22px;
+
+  --container: 1200px;
+  --gutter: 16px;
+  --header-height: 72px;
+
+  --shadow-card: 0 2px 12px rgba(51, 51, 51, 0.08);
+  --focus-ring: 0 0 0 3px rgba(255, 109, 69, 0.45);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 32px;
+  }
+}

@@ -1,0 +1,144 @@
+@import './styles/tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--header-height);
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  line-height: 1.15;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 4px;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 24px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-dark);
+}
+
+.btn--primary:hover {
+  background: var(--color-accent-strong);
+}
+
+.btn--outline {
+  background: transparent;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn--outline:hover {
+  background: var(--color-accent-tint);
+}
+
+.btn--outline-light {
+  background: transparent;
+  border-color: var(--color-on-dark);
+  color: var(--color-on-dark);
+}
+
+.btn--outline-light:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn--pill {
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 0 18px;
+}
+
+.btn--cyan {
+  background: var(--color-cyan);
+  color: var(--color-text);
+}
+
+.btn--cyan:hover {
+  background: #a3eaef;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
