@@ -11,11 +11,12 @@ export type LiveTripMessage =
       limitKmh: number
       limitName: string | null
       overLimit: boolean
+      tooSlow: boolean
       distanceKm: number
       elapsedSec: number
     }
   | { type: 'event'; kind: 'brake' | 'accel'; lat: number; lon: number }
-  | { type: 'end'; saved: boolean; distanceKm: number; harshBrakes: number; harshAccels: number }
+  | { type: 'end'; saved: boolean; distanceKm: number; harshBrakes: number; harshAccels: number; secTooSlow: number }
 
 const CHANNEL = 'foc-live-trip'
 
