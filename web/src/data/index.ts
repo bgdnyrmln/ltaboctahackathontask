@@ -11,4 +11,5 @@ export * from './score/index.ts';
 export * from './trips/index.ts';
 export * from './obd/index.ts';
 export * from './speedLimits/index.ts';
+export * from './routes/index.ts';
 export { SEED_DRIVERS, SEED_VEHICLES, SEED_DEMO_IDENTITIES } from './seed.ts';
