@@ -134,3 +134,34 @@ test('fatigue: free up to 2 h, then linear down to zero at 4 h, night scales the
   assert.equal(sub({ maxContinuousMin: 240 }), 0);
   assert.equal(sub({ maxContinuousMin: 150, nightKm: 150 }), 50); // all-night: excess 30 x 2 = 60
 });
+
+test('phone KPI exists only when the totals carry secPhoneUse, with its own weights', () => {
+  const without = dScore(totals(), []);
+  assert.equal(without.kpis.length, 4);
+  assert.equal(without.kpis.some((k) => k.id === 'phone_use_share'), false);
+
+  const withPhone = dScore({ ...totals(), secPhoneUse: 100 } as TripTotals, []);
+  assert.equal(withPhone.kpis.length, 5);
+  assert.deepEqual(withPhone.kpis.map((k) => k.weight), [0.35, 0.2, 0.1, 0.15, 0.2]);
+  assert.ok(Math.abs(withPhone.kpis.reduce((s, k) => s + k.weight, 0) - 1) < 1e-9);
+  assert.equal(withPhone.kpis[4].id, 'phone_use_share');
+  assert.equal(withPhone.kpis[4].value, 1); // 100 s of 10 000 s
+});
+
+test('more phone use never raises the score; 5% of driving time scores zero', () => {
+  const at = (secPhoneUse: number) => dScore({ ...totals(), secPhoneUse } as TripTotals, [])
+  let prev = Infinity;
+  for (const sec of [0, 50, 200, 500, 1500]) {
+    const score = at(sec).score ?? 0;
+    assert.ok(score <= prev, `${sec} s of phone use raised the score`);
+    prev = score;
+  }
+  const smoothing0 = createDScore(0)({ ...totals(), secPhoneUse: 500 } as TripTotals, []);
+  assert.equal(smoothing0.kpis[4].subscore, 0);
+});
+
+test('invalid phone seconds give no score', () => {
+  assert.equal(isValidTotals({ ...totals(), secPhoneUse: 20_000 } as TripTotals), false);
+  assert.equal(isValidTotals({ ...totals(), secPhoneUse: -1 } as TripTotals), false);
+  assert.equal(dScore({ ...totals(), secPhoneUse: 20_000 } as TripTotals, []).score, null);
+});
