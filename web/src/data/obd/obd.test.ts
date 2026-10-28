@@ -47,6 +47,10 @@ test('distance, driving time and speeding bands', () => {
   assert.equal(fast.secOverLimit, 30); // 54 is within the 3 km/h tolerance
   assert.equal(fast.secOver10, 20);
   assert.equal(fast.secOver20, 10);
+  // Relative bands at a 50 limit: 62 is +24%, 75 is +50%.
+  assert.equal(fast.secOverPct10, 20);
+  assert.equal(fast.secOverPct20, 20);
+  assert.equal(fast.secOverPct40, 10);
 });
 
 test('harsh events use 3 m/s² and merge within 3 s', () => {

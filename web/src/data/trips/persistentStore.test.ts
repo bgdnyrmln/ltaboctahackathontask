@@ -16,6 +16,9 @@ const trip = (id: string, driverId = 'drv-001'): TripSummary => ({
   secOverLimit: 120,
   secOver10: 40,
   secOver20: 5,
+  secOverPct10: 5,
+  secOverPct20: 5,
+  secOverPct40: 0,
   harshBrakeCount: 2,
   harshAccelCount: 1,
   nightKm: 0,
@@ -60,4 +63,14 @@ test('a storage that refuses writes still works in memory', async () => {
   const repo = createPersistentTripRepository(failing);
   await repo.save([trip('a')]);
   assert.equal((await repo.list()).length, 1);
+});
+
+test('a snapshot from before the relative speeding bands is upgraded, not discarded', async () => {
+  const storage = createMemoryStorage();
+  const { secOverPct10: _a, secOverPct20: _b, secOverPct40: _c, ...legacy } = trip('phone-old');
+  storage.setItem(TRIPS_STORAGE_KEY, JSON.stringify([legacy]));
+  const repo = createPersistentTripRepository(storage);
+  const loaded = await repo.get('phone-old');
+  assert.equal(loaded?.secOverPct10, 0);
+  assert.equal(loaded?.secOverPct40, 0);
 });

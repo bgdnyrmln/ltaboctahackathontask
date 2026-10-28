@@ -19,10 +19,18 @@ const COUNTERS = [
   'secOverLimit',
   'secOver10',
   'secOver20',
+  'secOverPct10',
+  'secOverPct20',
+  'secOverPct40',
   'harshBrakeCount',
   'harshAccelCount',
   'nightKm',
 ] as const;
+
+// Trips stored before the relative bands existed load with them as 0.
+export function upgradeTrip(trip: Omit<TripSummary, 'secOverPct10' | 'secOverPct20' | 'secOverPct40'> & Partial<TripSummary>): TripSummary {
+  return { secOverPct10: 0, secOverPct20: 0, secOverPct40: 0, ...trip };
+}
 
 const INTEGER_COUNTERS = new Set(['harshBrakeCount', 'harshAccelCount']);
 
@@ -64,6 +72,9 @@ export function validateTrip(trip: TripSummary): void {
     if (trip.secOver20 > trip.secOver10 || trip.secOver10 > trip.secOverLimit) {
       problems.push('speeding seconds must satisfy over20 <= over10 <= overLimit');
     }
+    if (trip.secOverPct40 > trip.secOverPct20 || trip.secOverPct20 > trip.secOverPct10 || trip.secOverPct10 > trip.secOverLimit) {
+      problems.push('speeding seconds must satisfy overPct40 <= overPct20 <= overPct10 <= overLimit');
+    }
     if (trip.secOverLimit > trip.drivingSec) {
       problems.push('secOverLimit exceeds drivingSec');
     }
@@ -101,6 +112,9 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
     secOverLimit: 0,
     secOver10: 0,
     secOver20: 0,
+    secOverPct10: 0,
+    secOverPct20: 0,
+    secOverPct40: 0,
     harshBrakeCount: 0,
     harshAccelCount: 0,
     nightKm: 0,

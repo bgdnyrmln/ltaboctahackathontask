@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { getApi, type Profile, type SignInResult } from '@data'
+import { createApi, dScore, type Profile, type SignInResult } from '@data'
 
-// Agent C's API owns the demo session; this context adds registration progress.
-export const api = getApi()
+// Agent C's API owns the demo session and data; scoring is Agent D's dScore (plugged in
+// via scoreFn as the API docs describe). This context adds registration progress.
+export const api = createApi({ scoreFn: dScore })
 
 const registrationKey = (driverId: string) => `foc.registration.${driverId}`
 
@@ -13,9 +14,7 @@ export type Registration = {
 }
 
 type AuthState =
-  | { status: 'loading' }
-  | { status: 'signedOut' }
-  | { status: 'signedIn'; profile: Profile; registration: Registration }
+  { status: 'loading' } | { status: 'signedOut' } | { status: 'signedIn'; profile: Profile; registration: Registration }
 
 type AuthContextValue = {
   state: AuthState
