@@ -47,8 +47,8 @@ export function RegisterConsent() {
             <label className="consent consent--optional">
               <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
               <span>
-                <strong>Optional: share a weekly score summary with the insurer.</strong> Simulation only, nothing is
-                sent.
+                <strong>Optional: share my weekly score with Demo Insurer AS.</strong> Only weekly scores and totals,
+                never trips or locations. You can switch it off any time.
               </span>
             </label>
           </div>

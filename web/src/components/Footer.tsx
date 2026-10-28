@@ -13,6 +13,9 @@ export function Footer() {
                 <a href={item.href}>{item.label}</a>
               </li>
             ))}
+            <li>
+              <a href="/insurer">For insurers</a>
+            </li>
           </ul>
         </nav>
       </div>
