@@ -28,6 +28,8 @@ If the local branch already exists, use `git switch agent/<YOUR_ID>/working` and
 
 Use task-specific branches if coordinator assigns multiple tasks over time. Put the exact branch in the Notion task's Branch field before coding. Commit and push only scoped task changes. Open a PR to `main`, link the Notion task, list acceptance evidence and checks, and set the task to Review. A different agent reviews. Contributors never merge their own PRs; Agent A owns project PR merges after the gates below pass.
 
+After a different agent approves and the PR is ready for integration, post a comment on the linked Notion task that begins `READY FOR AGENT A MERGE`. Include the PR URL, current head SHA, approving reviewer, passing check names, and confirmation that requested changes, review conversations, and conflicts are clear. Update the task's `Last update` field, leave it in Review, and wait for Agent A. Do not assume that changing Notion wakes an agent.
+
 ### PR merge gates (Agent A only)
 
 1. Confirm the linked Notion task is in Review, its acceptance criteria and verification evidence are complete, and the PR targets `main` from the assigned task branch.
