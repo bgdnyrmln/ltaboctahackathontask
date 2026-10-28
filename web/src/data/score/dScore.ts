@@ -4,8 +4,8 @@
 // speeding, input validation, and lower confidence without map speed limits.
 // All numbers are preliminary and illustrative (HACK-1 not approved).
 import type { TripSummary, TripTotals } from '../trips/types.ts';
-import { KPI_DEFS, bandOf, confidenceOf } from './interimScore.ts';
-import type { Confidence, KpiResult, ScoreFn } from './types.ts';
+import { FATIGUE_STRETCH_MIN, KPI_DEFS, bandOf, confidenceOf } from './interimScore.ts';
+import type { Confidence, KpiId, KpiResult, ScoreFn } from './types.ts';
 
 // Relative bands (share of the limit), nested: overLimit >= pct10 >= pct20 >= pct40.
 // +20 km/h in a 30 zone is far more severe than +20 km/h on a 110 road.
@@ -13,6 +13,14 @@ export const SPEED_BAND_WEIGHTS = { upTo10: 0.5, from10to20: 1, from20to40: 2, o
 export const PEAK_SHARE = 0.02; // share of driving time more than 40% over the limit
 export const PEAK_CAP = 60;
 export const MAP_LIMIT_SHARE_MIN = 0.5; // km share with a map speed limit
+// Weights with fatigue as a fourth KPI (sum 1). Preliminary, like the thresholds.
+export const D_WEIGHTS: Record<KpiId, number> = {
+  speeding_share: 0.45,
+  harsh_brake_per_100km: 0.25,
+  harsh_accel_per_100km: 0.15,
+  fatigue_excess_min: 0.15,
+};
+export const FATIGUE_BAD_EXCESS_MIN = 120; // 2 h beyond the stretch (4 h in total) scores 0
 const SPEEDING_PRIOR = 5; // typical severity-weighted share, % of driving time
 const PRIOR_SEC = 3600;
 
@@ -48,6 +56,15 @@ export function severitySeconds(t: TripTotals): number {
 
 export function speedingSeverityShare(t: TripTotals): number | null {
   return t.drivingSec > 0 ? (severitySeconds(t) / t.drivingSec) * 100 : null;
+}
+
+// Minutes the longest stretch ran past 2 h, scaled up by the night share of the distance.
+// Night alone adds nothing: it only matters together with a long uninterrupted stretch.
+export function fatigueExcessMin(t: TripTotals): number | null {
+  if (t.distanceKm <= 0) return null;
+  const excess = Math.max(0, t.maxContinuousMin - FATIGUE_STRETCH_MIN);
+  const nightShare = Math.min(1, Math.max(0, t.nightKm / t.distanceKm));
+  return excess * (1 + nightShare);
 }
 
 function mapLimitShare(trips: TripSummary[]): number {
@@ -90,11 +107,25 @@ export function createDScore(smoothing = 1): ScoreFn {
         value: observed === null ? null : r1(observed),
         unit: def.unit,
         subscore: subscore === null ? null : r1(subscore),
-        weight: def.weight,
+        weight: D_WEIGHTS[def.id],
         good: def.good,
         bad: def.bad,
-        pointsLost: subscore === null ? null : r1(def.weight * (100 - subscore)),
+        pointsLost: subscore === null ? null : r1(D_WEIGHTS[def.id] * (100 - subscore)),
       };
+    });
+
+    const fatigue = valid ? fatigueExcessMin(totals) : null;
+    const fatigueSub = fatigue === null ? null : 100 * (1 - clamp01(fatigue / FATIGUE_BAD_EXCESS_MIN));
+    kpis.push({
+      id: 'fatigue_excess_min',
+      label: 'Long drives without a break',
+      value: fatigue === null ? null : r1(fatigue),
+      unit: 'min beyond 2 h',
+      subscore: fatigueSub === null ? null : r1(fatigueSub),
+      weight: D_WEIGHTS.fatigue_excess_min,
+      good: 0,
+      bad: FATIGUE_BAD_EXCESS_MIN,
+      pointsLost: fatigueSub === null ? null : r1(D_WEIGHTS.fatigue_excess_min * (100 - fatigueSub)),
     });
 
     const usable = valid && confidence !== 'insufficient' && kpis.every((k) => k.subscore !== null);

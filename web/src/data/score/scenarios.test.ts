@@ -32,8 +32,15 @@ test('scenarios rank in the intended order', () => {
   assert.ok(score('typical') > score('harsh_only'));
 });
 
-test('noisy data and night driving change confidence or advice, never the score', () => {
+test('noisy data and night alone change confidence or nothing, never the score', () => {
   const typical = dScore(byId('typical').totals, []).score;
   assert.equal(dScore(byId('noisy_data').totals, []).score, typical);
-  assert.equal(dScore(byId('long_night_drive').totals, []).score, typical);
+  assert.equal(dScore(byId('night_only').totals, []).score, typical);
+});
+
+test('fatigue lowers the score only with a long stretch, and night makes it count more', () => {
+  const score = (id: string) => dScore(byId(id).totals, []).score!;
+  assert.ok(score('long_day_drive') < score('typical'));
+  assert.ok(score('long_night_drive') < score('long_day_drive'));
+  assert.ok(score('very_long_night_drive') < score('long_night_drive'));
 });

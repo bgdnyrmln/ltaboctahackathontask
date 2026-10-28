@@ -5,13 +5,17 @@ import type { TripSummary, TripTotals } from '../trips/types.ts';
 
 export type Confidence = 'insufficient' | 'low' | 'medium' | 'high';
 
-export type KpiId = 'speeding_share' | 'harsh_brake_per_100km' | 'harsh_accel_per_100km';
+export type KpiId =
+  | 'speeding_share'
+  | 'harsh_brake_per_100km'
+  | 'harsh_accel_per_100km'
+  | 'fatigue_excess_min';
 
 export interface KpiResult {
   id: KpiId;
   label: string;
   value: number | null; // observed, null without exposure
-  unit: '% of driving time' | 'per 100 km';
+  unit: '% of driving time' | 'per 100 km' | 'min beyond 2 h';
   subscore: number | null; // 0..100 after small-sample smoothing
   weight: number; // preliminary, sums to 1
   good: number;
