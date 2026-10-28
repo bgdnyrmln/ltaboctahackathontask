@@ -14,6 +14,8 @@ import { PLACES, ROUTE } from '../telemetry/simulatedDrive'
 const OK_COLOR = '#2e9e3a'
 const OVER_COLOR = '#ff4512'
 const SIGN_AFTER_FIXES = 30
+const FOLLOW_ZOOM = 16
+const PAN_EVERY_FIXES = 3 // pan smoothly every few fixes instead of on every one
 
 type Live = Extract<LiveTripMessage, { type: 'fix' }>
 type Summary = Extract<LiveTripMessage, { type: 'end' }>
@@ -49,6 +51,9 @@ export function LiveTripMap() {
   // A new limit sign appears only after the limit has held for a few fixes (no flicker).
   const pendingLimit = useRef<{ limit: number; at: L.LatLng; count: number } | null>(null)
   const counts = useRef({ fixes: 0, over: 0 })
+  const routeBounds = useRef<L.LatLngBounds | null>(null)
+  const followRef = useRef(true)
+  const [following, setFollowing] = useState(true)
 
   const [status, setStatus] = useState<'idle' | 'live' | 'done'>('idle')
   const [live, setLive] = useState<Live | null>(null)
@@ -79,7 +84,13 @@ export function LiveTripMap() {
 
     // The planned route, faint, so viewers see where the drive goes.
     const planned = L.polyline(ROUTE, { color: '#7d8796', weight: 4, opacity: 0.45, dashArray: '2 9' }).addTo(m)
-    m.fitBounds(planned.getBounds(), { padding: [36, 36] })
+    routeBounds.current = planned.getBounds()
+    m.fitBounds(routeBounds.current, { padding: [36, 36] })
+    // Dragging the map by hand pauses following the car.
+    m.on('dragstart', () => {
+      followRef.current = false
+      setFollowing(false)
+    })
     // Named ends of the route: Old Riga and the Akropole Rīga mall.
     L.marker([PLACES.oldRiga.lat, PLACES.oldRiga.lon], {
       icon: placeIcon('⛪', PLACES.oldRiga.name, 'right'),
@@ -108,6 +119,8 @@ export function LiveTripMap() {
         const layer = tripLayer.current
         if (!layer) return
         if (msg.type === 'start') {
+          followRef.current = true
+          setFollowing(true)
           layer.clearLayers()
           trail.current = { line: null, over: null, last: null }
           car.current = null
@@ -158,8 +171,17 @@ export function LiveTripMap() {
               pendingLimit.current = null
             }
           }
-          if (!car.current) car.current = L.marker(at, { icon: carIcon, zIndexOffset: 1000 }).addTo(layer)
-          else car.current.setLatLng(at)
+          const m = map.current
+          if (!car.current) {
+            car.current = L.marker(at, { icon: carIcon, zIndexOffset: 1000 }).addTo(layer)
+            if (m && followRef.current) m.setView(at, FOLLOW_ZOOM, { animate: true, duration: 0.8 })
+          } else {
+            car.current.setLatLng(at)
+            // Follow the car: pan smoothly every few fixes.
+            if (m && followRef.current && counts.current.fixes % PAN_EVERY_FIXES === 0) {
+              m.panTo(at, { animate: true, duration: 0.3, easeLinearity: 1, noMoveStart: true })
+            }
+          }
           counts.current.fixes++
           if (msg.overLimit) counts.current.over++
           setStatus('live')
@@ -170,6 +192,10 @@ export function LiveTripMap() {
         if (msg.type === 'event') {
           L.marker([msg.lat, msg.lon], { icon: pinIcon(msg.kind), zIndexOffset: 800 }).addTo(layer)
           return
+        }
+        // Trip over: zoom out to the whole route next to the summary.
+        if (map.current && routeBounds.current && followRef.current) {
+          map.current.flyToBounds(routeBounds.current, { padding: [36, 36], duration: 1.2 })
         }
         setStatus('done')
         setSummary(msg)
@@ -188,6 +214,21 @@ export function LiveTripMap() {
 
       <div className="ltm__stage">
         <div ref={el} className="ltm__leaflet" />
+
+        {status === 'live' && !following && (
+          <button
+            type="button"
+            className="btn btn--primary ltm__follow"
+            onClick={() => {
+              followRef.current = true
+              setFollowing(true)
+              const at = trail.current.last
+              if (at && map.current) map.current.setView(at, FOLLOW_ZOOM, { animate: true, duration: 0.6 })
+            }}
+          >
+            Follow car
+          </button>
+        )}
 
         {status === 'idle' && (
           <div className="ltm__overlay">
