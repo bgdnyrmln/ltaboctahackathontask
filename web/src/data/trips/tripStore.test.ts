@@ -39,6 +39,7 @@ function trip(overrides: Partial<TripSummary> = {}): TripSummary {
     secOverPct20: 5,
     secOverPct40: 0,
     secPhoneUse: 0,
+    secTooSlow: 0,
     harshBrakeCount: 2,
     harshAccelCount: 1,
     nightKm: 0,
@@ -221,7 +222,7 @@ test('an old sqlite database gains the new columns and keeps its rows', async ()
   );
   const repo = await createSqliteTripRepository(driver);
   const old = await repo.get('old-1');
-  assert.deepEqual([old?.secOverPct10, old?.secOverPct20, old?.secOverPct40, old?.secPhoneUse, old?.maxContinuousMin], [0, 0, 0, 0, 0]);
+  assert.deepEqual([old?.secOverPct10, old?.secOverPct20, old?.secOverPct40, old?.secPhoneUse, old?.secTooSlow, old?.maxContinuousMin], [0, 0, 0, 0, 0, 0]);
   await repo.save([trip({ id: 'new-1' })]);
   assert.equal((await repo.get('new-1'))?.secOverPct10, 5);
   // Opening again is a no-op.
@@ -240,5 +241,25 @@ describe('phone use', () => {
   test('trips stored before phone use existed load with 0', () => {
     const { secPhoneUse: _p, ...legacy } = trip({ secPhoneUse: 9 });
     assert.equal(upgradeTrip(legacy).secPhoneUse, 0);
+  });
+});
+
+describe('too slow', () => {
+  test('secTooSlow is a non-negative count within driving time and is summed', () => {
+    validateTrip(trip({ secTooSlow: 30 }));
+    assert.throws(() => validateTrip(trip({ secTooSlow: 1600 })), /secTooSlow exceeds drivingSec/);
+    assert.throws(() => validateTrip(trip({ secTooSlow: -1 })), /secTooSlow must be/);
+    assert.equal(sumTrips([trip({ secTooSlow: 30 }), trip({ id: 'trip-2', secTooSlow: 12 })]).secTooSlow, 42);
+  });
+
+  test('trips stored before too-slow existed load with 0', () => {
+    const { secTooSlow: _s, ...legacy } = trip({ secTooSlow: 9 });
+    assert.equal(upgradeTrip(legacy).secTooSlow, 0);
+  });
+
+  test('sqlite stores secTooSlow', async () => {
+    const repo = await createSqliteTripRepository(nodeSqliteDriver());
+    await repo.save([trip({ secTooSlow: 44 })]);
+    assert.equal((await repo.get('trip-1'))?.secTooSlow, 44);
   });
 });

@@ -16,6 +16,7 @@ export interface DrivingProfile {
   speedLimitSource: TripSummary['speedLimitSource'];
   improvement: number; // 0.4 = oldest week 40% worse, improving to the newest
   phoneShare: number; // share of driving time with phone use
+  slowShare: number; // share of driving time far below the limit (see speeding.ts)
 }
 
 export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: DrivingProfile }> = {
@@ -33,6 +34,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       speedLimitSource: 'road_type_default',
       improvement: 0,
       phoneShare: 0.003,
+      slowShare: 0.02,
     },
   },
   'drv-002': {
@@ -49,6 +51,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       speedLimitSource: 'road_type_default',
       improvement: 0.4,
       phoneShare: 0.04,
+      slowShare: 0.015,
     },
   },
   'drv-003': {
@@ -65,6 +68,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       speedLimitSource: 'unknown',
       improvement: 0,
       phoneShare: 0,
+      slowShare: 0,
     },
   },
 };
@@ -159,6 +163,9 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
       // Separate stream so adding this field left every existing number unchanged.
       const phoneRnd = mulberry32(hashSeed(`${driverId}|${weekStart}|${i}|phone`));
       const secPhoneUse = Math.min(drivingSec, Math.round(drivingSec * profile.phoneShare * factor * between(phoneRnd, 0.5, 1.5)));
+      // Too-slow time is a habit, not a skill, so it does not follow `improvement`.
+      const slowRnd = mulberry32(hashSeed(`${driverId}|${weekStart}|${i}|slow`));
+      const secTooSlow = Math.min(drivingSec - secOverLimit, Math.round(drivingSec * profile.slowShare * between(slowRnd, 0.5, 1.5)));
 
       trips.push({
         id: `syn-${driverId}-${weekStart}-${String(i).padStart(2, '0')}`,
@@ -175,6 +182,7 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
         secOverPct20,
         secOverPct40,
         secPhoneUse,
+        secTooSlow,
         harshBrakeCount: poisson((profile.brakePer100 * factor * distanceKm) / 100, rnd),
         harshAccelCount: poisson((profile.accelPer100 * factor * distanceKm) / 100, rnd),
         nightKm: night ? distanceKm : 0,

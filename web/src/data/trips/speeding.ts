@@ -20,6 +20,16 @@ export interface SpeedingBands {
   overPct40: boolean;
 }
 
+// Driving far below the limit (holding up traffic, provoking risky overtakes):
+// moving at under half the limit for a run of at least 8 s, so normal starts,
+// stops and turns do not count. Shared by the aggregator, recorder and route view.
+export const TOO_SLOW_SHARE = 0.5;
+export const TOO_SLOW_MIN_KMH = 5;
+export const TOO_SLOW_AFTER_MS = 8000;
+
+export const isSlowSpeed = (speedKmh: number, limitKmh: number) =>
+  speedKmh >= TOO_SLOW_MIN_KMH && speedKmh < limitKmh * TOO_SLOW_SHARE;
+
 export function speedingBands(speedKmh: number, limitKmh: number): SpeedingBands {
   const over = speedKmh - limitKmh;
   const overLimit = limitKmh > 0 && over > speedToleranceKmh(limitKmh);
