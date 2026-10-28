@@ -46,8 +46,10 @@ export function InsurerLogin() {
   return (
     <div className="ins-login">
       <div className="ins-login__card">
-        <Logo />
-        <LangSwitch />
+        <div className="ins-login__top">
+          <Logo />
+          <LangSwitch />
+        </div>
         <h1>{t('Insurer portal')}</h1>
         <p className="muted">
           {t('Weekly driving-score summaries of drivers who chose to share them. Demo: fictional insurer, synthetic data, no real quotes.')}
