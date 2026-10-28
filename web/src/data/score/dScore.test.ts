@@ -122,7 +122,7 @@ test('more harsh events never raise the score', () => {
 
 test('weights sum to 1 and night driving without a long stretch is not scored', () => {
   const r = dScore(totals(), []);
-  assert.deepEqual(r.kpis.map((k) => k.weight), [0.45, 0.25, 0.15, 0.15]);
+  assert.deepEqual(r.kpis.map((k) => k.weight), [0.35, 0.2, 0.1, 0.15, 0.2]);
   assert.ok(Math.abs(r.kpis.reduce((s, k) => s + k.weight, 0) - 1) < 1e-9);
   assert.equal(dScore(totals({ nightKm: 150, maxContinuousMin: 60 }), []).score, r.score);
 });
@@ -136,9 +136,12 @@ test('fatigue: free up to 2 h, then linear down to zero at 4 h, night scales the
 });
 
 test('phone KPI exists only when the totals carry secPhoneUse, with its own weights', () => {
-  const without = dScore(totals(), []);
+  // Totals from an older source that has no secPhoneUse: four KPIs, old weights.
+  const { secPhoneUse: _unused, ...legacy } = totals();
+  const without = dScore(legacy as TripTotals, []);
   assert.equal(without.kpis.length, 4);
   assert.equal(without.kpis.some((k) => k.id === 'phone_use_share'), false);
+  assert.deepEqual(without.kpis.map((k) => k.weight), [0.45, 0.25, 0.15, 0.15]);
 
   const withPhone = dScore({ ...totals(), secPhoneUse: 100 } as TripTotals, []);
   assert.equal(withPhone.kpis.length, 5);
