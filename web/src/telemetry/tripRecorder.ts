@@ -130,7 +130,9 @@ export class TripRecorder {
 
   // Call on touch/pointer events on the driving screen and on visibilitychange.
   // Only the timestamp is kept, never what was touched.
-  markPhoneActivity(t: number = Date.now()) {
+  markPhoneActivity(at?: number) {
+    // Simulated runs use their own clock (the time of the latest fix); real GPS uses the wall clock.
+    const t = at ?? (this.source === 'phone' ? Date.now() : (this.lastT ?? Date.now()))
     const last = this.phoneMarks[this.phoneMarks.length - 1]
     if (last === undefined || t - last >= 250) this.phoneMarks.push(t)
   }

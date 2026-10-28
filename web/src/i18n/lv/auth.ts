@@ -1,20 +1,20 @@
 // Smart-ID demo sign-in, consent, profile confirmation and the app chrome.
 export const AUTH: Record<string, string> = {
-  'Choose a demo profile. Real personal codes are not accepted in this demo.':
-    'Izvēlieties demo profilu. Īstie personas kodi šajā demo netiek pieņemti.',
+  'Choose a test profile or enter one of its test personal codes. Real personal codes are never accepted.':
+    'Izvēlieties testa profilu vai ievadiet kādu no tā testa personas kodiem. Īstie personas kodi netiek pieņemti nekad.',
   'Demo profile not found. Pick one from the list.': 'Demo profils nav atrasts. Izvēlieties vienu no saraksta.',
   'Profile data is unavailable. Try again or pick another profile.':
     'Profila dati nav pieejami. Mēģiniet vēlreiz vai izvēlieties citu profilu.',
   'Sign in with Smart-ID': 'Pieslēgties ar Smart-ID',
   'DEMO login, not Smart-ID': 'DEMO pieslēgšanās, nevis Smart-ID',
-  'Or enter a demo ID': 'Vai ievadiet demo ID',
-  'Do not enter a real personal code.': 'Neievadiet īstu personas kodu.',
+  'Or enter a test personal code': 'Vai ievadiet testa personas kodu',
+  'Test codes only. Real personal codes are rejected and never stored.': 'Tikai testa kodi. Īstie personas kodi tiek noraidīti un netiek glabāti.',
   Continue: 'Turpināt',
   'Verification code': 'Verifikācijas kods',
   'In the real Smart-ID app you would check this code and enter PIN1. This demo confirms automatically.':
     'Īstajā Smart-ID lietotnē jūs pārbaudītu šo kodu un ievadītu PIN1. Šis demo apstiprina automātiski.',
   Cancel: 'Atcelt',
-  'Choose a demo profile': 'Izvēlieties demo profilu',
+  'Choose a test profile': 'Izvēlieties testa profilu',
 
   'Your data, your choice': 'Jūsu dati, jūsu izvēle',
   'We score how you drive. Profile data such as licence age never changes your behaviour score; it only adjusts a separate "with profile" number shown next to it.':
@@ -24,9 +24,8 @@ export const AUTH: Record<string, string> = {
   'Calculate my score on this device.': 'Aprēķināt manu vērtējumu šajā ierīcē.',
   'Trip summaries stay local; raw locations are never stored. You can delete them any time.':
     'Braucienu kopsavilkumi paliek ierīcē; neapstrādātas atrašanās vietas netiek glabātas. Tos var izdzēst jebkurā laikā.',
-  'Optional: share my weekly score with Demo Insurer AS.': 'Pēc izvēles: kopīgot manu nedēļas vērtējumu ar Demo Insurer AS.',
-  'Only weekly scores and totals, never trips or locations. You can switch it off any time.':
-    'Tikai nedēļas vērtējumus un kopsummas, nekad braucienus vai atrašanās vietas. To var izslēgt jebkurā laikā.',
+  'Your weekly score and totals are shared with Demo Insurer AS, never trips or locations. You can delete your data any time.':
+    'Jūsu nedēļas vērtējums un kopsummas tiek kopīgotas ar Demo Insurer AS, nekad braucieni vai atrašanās vietas. Savus datus varat izdzēst jebkurā laikā.',
   'Agree and continue': 'Piekrist un turpināt',
 
   'Is this you?': 'Vai tas esat jūs?',

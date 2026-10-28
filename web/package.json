@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test \"src/data/**/*.test.ts\" \"src/i18n/**/*.test.ts\"",
+    "test": "node --test \"src/data/**/*.test.ts\" \"src/i18n/**/*.test.ts\" \"src/telemetry/**/*.test.ts\"",
     "typecheck:data": "tsc -p tsconfig.test.json"
   },
   "dependencies": {

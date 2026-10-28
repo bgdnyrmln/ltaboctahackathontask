@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { PHONE_FRAME_NAME } from '../telemetry/platform'
 import './PhoneFrame.css'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 
 const PHONE_W = 390
 const PHONE_H = 800
@@ -13,6 +13,16 @@ const MIN_SCALE = 0.55
 // switches the app into phone-simulator mode, so trips can be started there.
 // With `fit`, the whole phone scales down to fit the browser window height; the
 // app inside keeps its real phone width, so its layout does not change.
+function PhoneClock() {
+  const { lang } = useLang()
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000)
+    return () => window.clearInterval(id)
+  }, [])
+  return <span>{new Intl.DateTimeFormat(lang === 'lv' ? 'lv-LV' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(now)}</span>
+}
+
 export function PhoneFrame({
   src = '/app/drive',
   caption,
@@ -45,7 +55,7 @@ export function PhoneFrame({
       <div ref={box} className="phone__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
         <div className="phone__body" style={scale < 1 ? { transform: `scale(${scale})` } : undefined}>
           <div className="phone__status" aria-hidden="true">
-            <span>9:41</span>
+            <PhoneClock />
             <span className="phone__notch" />
             <span>5G ▮▮▮</span>
           </div>
