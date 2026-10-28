@@ -6,7 +6,7 @@ import type { GpsFix } from './tripRecorder'
 
 // Real Riga streets (road geometry from OpenStreetMap via the OSRM router, ©
 // OpenStreetMap contributors, fetched once and bundled): Old Riga -> 11. novembra
-// krastmala -> Radzina krastmala -> Krasta iela, about 6 km.
+// krastmala -> Radzina krastmala -> Krasta iela -> Akropole Riga car park, ~6.4 km.
 export const ROUTE: Array<[number, number]> = [
   [56.94864, 24.10651],
   [56.94831, 24.10656],
@@ -184,9 +184,40 @@ export const ROUTE: Array<[number, number]> = [
   [56.92281, 24.17038],
   [56.92289, 24.17033],
   [56.92295, 24.17028],
-  [56.92302, 24.17012],
-  [56.92304, 24.17009],
+  [56.92307, 24.17024],
+  [56.9232, 24.17013],
+  [56.92331, 24.17006],
+  [56.92341, 24.17001],
+  [56.92348, 24.17001],
+  [56.92353, 24.17005],
+  [56.9236, 24.17015],
+  [56.92364, 24.17021],
+  [56.92379, 24.17046],
+  [56.92418, 24.17106],
+  [56.92436, 24.17134],
+  [56.92445, 24.17151],
+  [56.92454, 24.1717],
+  [56.92484, 24.17225],
+  [56.92531, 24.17293],
+  [56.92566, 24.17354],
+  [56.92565, 24.1736],
+  [56.92562, 24.17369],
+  [56.92556, 24.17381],
+  [56.92564, 24.17392],
+  [56.92567, 24.17398],
+  [56.92571, 24.17404],
+  [56.92574, 24.17415],
+  [56.92574, 24.17427],
+  [56.9257, 24.1744],
+  [56.92561, 24.17452],
 ]
+
+// Named ends of the route (OpenStreetMap / Nominatim, fetched once).
+export const PLACES = {
+  oldRiga: { name: 'Old Riga, Doma laukums', lat: 56.94965, lon: 24.10523 },
+  akropole: { name: 'Akropole Rīga', lat: 56.92397, lon: 24.17516 },
+} as const
+export type PlaceId = keyof typeof PLACES
 
 type Step = ['ramp', number, number, number] | ['hold', number, number]
 
@@ -207,13 +238,24 @@ function profileFrom(steps: Step[]): number[] {
 
 export type SimTripId = 'rushed' | 'calm' | 'evening'
 
-// A few scripted fake trips on the same real streets (lengths fit the ~6 km route).
-export const SIM_TRIPS: Array<{ id: SimTripId; label: string; note: string; reverse: boolean; steps: Step[] }> = [
+// A few scripted fake trips on the same real streets. Each is stretched to end at
+// its destination (see fitToRoute).
+export const SIM_TRIPS: Array<{
+  id: SimTripId
+  label: string
+  note: string
+  reverse: boolean
+  from: PlaceId
+  to: PlaceId
+  steps: Step[]
+}> = [
   {
     id: 'rushed',
     label: 'Rushed commute',
     note: 'Speeding in Old Riga and on Krasta iela, one harsh braking and one harsh acceleration.',
     reverse: false,
+    from: 'oldRiga',
+    to: 'akropole',
     steps: [
       ['ramp', 0, 30, 8],
       ['hold', 35, 118], // Old Riga 30 zone: slightly over
@@ -235,6 +277,8 @@ export const SIM_TRIPS: Array<{ id: SimTripId; label: string; note: string; reve
     label: 'Calm drive',
     note: 'Within every limit, smooth speed changes. Watch the score go up.',
     reverse: false,
+    from: 'oldRiga',
+    to: 'akropole',
     steps: [
       ['ramp', 0, 27, 10],
       ['hold', 26, 165], // Old Riga 30 zone
@@ -252,6 +296,8 @@ export const SIM_TRIPS: Array<{ id: SimTripId; label: string; note: string; reve
     label: 'Evening return',
     note: 'Back into Old Riga: moderate speeding on the way, one harsh braking, calm in the old town.',
     reverse: true,
+    from: 'akropole',
+    to: 'oldRiga',
     steps: [
       ['ramp', 0, 50, 10],
       ['hold', 50, 60],
@@ -293,11 +339,34 @@ function pointAt(route: Array<[number, number]>, km: number): [number, number] {
   return route[route.length - 1]
 }
 
+// Route length in km.
+function routeKm(route: Array<[number, number]>): number {
+  let km = 0
+  for (let i = 1; i < route.length; i++) km += segmentKm(route[i - 1], route[i])
+  return km
+}
+
+// Make the drive end exactly at the destination: cruise a little longer before
+// the final stop if the script is shorter than the route.
+function fitToRoute(steps: Step[], km: number): number[] {
+  const scripted = profileFrom(steps)
+  const covered = scripted.reduce((sum, v) => sum + v / 3600, 0)
+  const last = steps[steps.length - 1]
+  if (covered >= km || last[0] !== 'ramp') return scripted
+  const cruise = last[1]
+  const extraSec = Math.ceil(((km - covered) / cruise) * 3600)
+  return profileFrom([...steps.slice(0, -1), ['hold', cruise, extraSec], last])
+}
+
 export const SIMULATION_SPEEDUP = 12
 
 let lastPicked: SimTripId | null = null
 
 // A random fake trip for each Start, never the same one twice in a row.
+export function simTrip(id: SimTripId) {
+  return SIM_TRIPS.find((t) => t.id === id) ?? SIM_TRIPS[0]
+}
+
 export function pickRandomSimTrip(): SimTripId {
   const options = SIM_TRIPS.map((t) => t.id).filter((id) => id !== lastPicked)
   lastPicked = options[Math.floor(Math.random() * options.length)]
@@ -308,7 +377,7 @@ export function pickRandomSimTrip(): SimTripId {
 export function simulatedFixes(tripId: SimTripId = 'rushed', end = Date.now()): GpsFix[] {
   const trip = SIM_TRIPS.find((t) => t.id === tripId) ?? SIM_TRIPS[0]
   const route = trip.reverse ? [...ROUTE].reverse() : ROUTE
-  const profile = profileFrom(trip.steps)
+  const profile = fitToRoute(trip.steps, routeKm(route))
   const start = end - profile.length * 1000
   let km = 0
   return profile.map((kmh, i) => {

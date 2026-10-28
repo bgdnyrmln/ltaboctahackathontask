@@ -118,11 +118,6 @@ export function Drive() {
           <div className="drive-sim__side">
             <div className="drive-sim__head">
               <h1 className="app-page__title">Drive</h1>
-              <p className="muted">
-                Trips are recorded by the mobile app, never by the web account. Tap <strong>Start trip</strong> on the
-                phone: a computer has no GPS, so it drives a scripted route through Riga. Score and trips here update
-                when you save.
-              </p>
             </div>
             <LiveTripMap />
           </div>

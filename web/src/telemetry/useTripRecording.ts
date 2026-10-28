@@ -2,7 +2,7 @@ import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
-import { pickRandomSimTrip, startSimulatedDrive } from './simulatedDrive'
+import { PLACES, pickRandomSimTrip, simTrip, startSimulatedDrive } from './simulatedDrive'
 import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
@@ -71,13 +71,15 @@ export function useTripRecording() {
     }
     setRouteDone(false)
     eventCounts.current = { brake: 0, accel: 0 }
-    postLiveTrip({ type: 'start', at: Date.now() })
     if (isPhoneSimulator()) {
-      // No GPS in a desktop browser: drive a scripted Riga route through the same recorder.
+      // No GPS in a desktop browser: drive a random scripted Riga trip through the same recorder.
+      const tripId = pickRandomSimTrip()
+      const trip = simTrip(tripId)
+      postLiveTrip({ type: 'start', at: Date.now(), from: PLACES[trip.from].name, to: PLACES[trip.to].name })
       setError(null)
       recorder.current = new TripRecorder('synthetic')
       setStatus('recording')
-      stopSimulation.current = startSimulatedDrive(pickRandomSimTrip(), ingest, () => setRouteDone(true))
+      stopSimulation.current = startSimulatedDrive(tripId, ingest, () => setRouteDone(true))
       return
     }
     if (!('geolocation' in navigator)) {
@@ -89,6 +91,7 @@ export function useTripRecording() {
       setError('Location needs HTTPS. Open the app over https:// (or localhost).')
       return
     }
+    postLiveTrip({ type: 'start', at: Date.now() })
     setError(null)
     setStatus('requesting')
     recorder.current = new TripRecorder()
