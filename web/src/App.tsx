@@ -6,6 +6,7 @@ import { AppLayout } from './pages/app/AppLayout'
 import { Drive } from './pages/app/Drive'
 import { Home } from './pages/app/Home'
 import { ProfileTab } from './pages/app/ProfileTab'
+import { TripDetail } from './pages/app/TripDetail'
 import { Trips } from './pages/app/Trips'
 import { Landing } from './pages/Landing'
 import { LiveDemo } from './pages/LiveDemo'
@@ -61,6 +62,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="drive" element={<Drive />} />
         <Route path="trips" element={<Trips />} />
+        <Route path="trips/:id" element={<TripDetail />} />
         <Route path="profile" element={<ProfileTab />} />
       </Route>
       <Route element={<MarketingLayout />}>
