@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createDemoSmartIdAuth } from './demoAuth.ts';
 import { createCsddMockRegistry } from './registry.ts';
 import { SEED_DEMO_IDENTITIES, SEED_DRIVERS, SEED_VEHICLES } from './seed.ts';
-import { UNKNOWN } from './types.ts';
+import { isInspectionOverdue, known, UNKNOWN } from './types.ts';
 import type { Driver, Vehicle } from './types.ts';
 import { validateRegistry } from './validateRegistry.ts';
 
@@ -117,4 +117,46 @@ test('unknown values are allowed, future and invalid values are not', () => {
     'driver:d1: licenseCategories has an unrecognised category',
     'driver:d1: licenseSince is in the future',
   ]);
+});
+
+test('static profile fields: absent or unknown is fine, bad values are reported', () => {
+  assert.deepEqual(problemsOf([driver()], [vehicle()]), []); // absent = unknown
+  assert.deepEqual(
+    problemsOf(
+      [driver({ claimsLast5y: UNKNOWN, penaltyPoints: UNKNOWN, birthYear: UNKNOWN })],
+      [vehicle({ inspectionValidUntil: UNKNOWN })],
+    ),
+    [],
+  );
+  assert.deepEqual(
+    problemsOf(
+      [driver({ claimsLast5y: -1, penaltyPoints: 2.5, birthYear: 2015 })],
+      [vehicle({ inspectionValidUntil: '30.09.2026' })],
+    ),
+    [
+      'driver:d1: claimsLast5y must be an integer 0-50 or unknown',
+      'driver:d1: penaltyPoints must be an integer 0-50 or unknown',
+      'driver:d1: birthYear must be an integer 1900-2010 or unknown',
+      'vehicle:v1: inspectionValidUntil must be YYYY-MM-DD or unknown',
+    ],
+  );
+  assert.deepEqual(problemsOf([driver({ birthYear: 2005, licenseSince: '2015-01-01' })], []), [
+    'driver:d1: licenseSince is before the driver could hold a licence',
+  ]);
+});
+
+test('seeded profiles give D three different cases', () => {
+  const [anna, janis, marta] = SEED_DRIVERS;
+  const [annaCar, janisCar, martaCar] = SEED_VEHICLES;
+  assert.deepEqual([known(anna.claimsLast5y), known(anna.penaltyPoints), isInspectionOverdue(annaCar, NOW)], [0, 0, false]);
+  assert.deepEqual([known(janis.claimsLast5y), known(janis.penaltyPoints), isInspectionOverdue(janisCar, NOW)], [1, 4, true]);
+  assert.ok(NOW.getTime() - Date.parse(known(janis.licenseSince)!) < 2 * 365.25 * 864e5); // new driver
+  assert.deepEqual([known(marta.claimsLast5y), known(marta.birthYear), isInspectionOverdue(martaCar, NOW)], [null, null, null]);
+});
+
+test('inspection is valid through its expiry day', () => {
+  const v = vehicle({ inspectionValidUntil: '2026-10-28' });
+  assert.equal(isInspectionOverdue(v, new Date('2026-10-28T20:00:00Z')), false);
+  assert.equal(isInspectionOverdue(v, new Date('2026-10-29T08:00:00Z')), true);
+  assert.equal(isInspectionOverdue(vehicle(), NOW), null);
 });
