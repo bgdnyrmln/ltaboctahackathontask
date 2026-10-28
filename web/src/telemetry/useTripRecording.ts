@@ -1,8 +1,9 @@
 import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
 import { startSimulatedDrive } from './simulatedDrive'
-import { TripRecorder, type LiveStats } from './tripRecorder'
+import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
 
@@ -22,6 +23,32 @@ export function useTripRecording() {
   const ticker = useRef<number | null>(null)
   const stopSimulation = useRef<(() => void) | null>(null)
   const [routeDone, setRouteDone] = useState(false)
+  const eventCounts = useRef({ brake: 0, accel: 0 })
+
+  // Feed one fix to the recorder, update the screen and broadcast it to the live map.
+  const ingest = useCallback((fix: GpsFix) => {
+    const rec = recorder.current
+    if (!rec) return
+    rec.add(fix)
+    const s = rec.stats()
+    setStats(s)
+    postLiveTrip({
+      type: 'fix',
+      lat: fix.lat,
+      lon: fix.lon,
+      kmh: s.speedKmh,
+      limitKmh: s.limitKmh,
+      limitName: s.limitName,
+      overLimit: s.overLimit,
+      distanceKm: s.distanceKm,
+      elapsedSec: s.elapsedSec,
+    })
+    if (s.harshBrakes > eventCounts.current.brake)
+      postLiveTrip({ type: 'event', kind: 'brake', lat: fix.lat, lon: fix.lon })
+    if (s.harshAccels > eventCounts.current.accel)
+      postLiveTrip({ type: 'event', kind: 'accel', lat: fix.lat, lon: fix.lon })
+    eventCounts.current = { brake: s.harshBrakes, accel: s.harshAccels }
+  }, [])
 
   const cleanup = useCallback(() => {
     stopSimulation.current?.()
@@ -43,18 +70,14 @@ export function useTripRecording() {
       return
     }
     setRouteDone(false)
+    eventCounts.current = { brake: 0, accel: 0 }
+    postLiveTrip({ type: 'start', at: Date.now() })
     if (isPhoneSimulator()) {
       // No GPS in a desktop browser: drive a scripted Riga route through the same recorder.
       setError(null)
       recorder.current = new TripRecorder('synthetic')
       setStatus('recording')
-      stopSimulation.current = startSimulatedDrive(
-        (fix) => {
-          recorder.current?.add(fix)
-          if (recorder.current) setStats(recorder.current.stats())
-        },
-        () => setRouteDone(true),
-      )
+      stopSimulation.current = startSimulatedDrive(ingest, () => setRouteDone(true))
       return
     }
     if (!('geolocation' in navigator)) {
@@ -74,14 +97,13 @@ export function useTripRecording() {
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         setStatus('recording')
-        recorder.current?.add({
+        ingest({
           t: pos.timestamp,
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
           speed: pos.coords.speed,
         })
-        if (recorder.current) setStats(recorder.current.stats())
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -105,12 +127,20 @@ export function useTripRecording() {
     } catch {
       // Wake lock not granted: recording still works while the screen stays on.
     }
-  }, [cleanup])
+  }, [cleanup, ingest])
 
   const stop = useCallback(
     (driverId: string, vehicleId: string | null): TripSummary | null => {
       cleanup()
+      const last = recorder.current?.stats()
       const trip = recorder.current?.finish(driverId, vehicleId) ?? null
+      postLiveTrip({
+        type: 'end',
+        saved: trip !== null,
+        distanceKm: trip?.distanceKm ?? last?.distanceKm ?? 0,
+        harshBrakes: trip?.harshBrakeCount ?? last?.harshBrakes ?? 0,
+        harshAccels: trip?.harshAccelCount ?? last?.harshAccels ?? 0,
+      })
       recorder.current = null
       setStatus('idle')
       setStats(null)
