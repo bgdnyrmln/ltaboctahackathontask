@@ -78,7 +78,25 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px var(--gutter) 48px;
+  padding: 28px var(--gutter) 40px;
+}
+
+@media (max-height: 800px) {
+  .ins__main {
+    padding-top: 20px;
+  }
+
+  .ins-page {
+    gap: 14px;
+  }
+
+  .ins-page__head h1 {
+    font-size: 26px;
+  }
+
+  .ins-stat strong {
+    font-size: 30px;
+  }
 }
 
 .ins__foot {
@@ -113,7 +131,7 @@
   display: grid;
   gap: 6px;
   align-content: start;
-  padding: 18px 20px;
+  padding: 14px 18px;
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
@@ -147,7 +165,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   align-items: end;
-  height: 86px;
+  height: 64px;
 }
 
 .bands__col {
