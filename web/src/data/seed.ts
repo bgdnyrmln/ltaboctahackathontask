@@ -92,3 +92,12 @@ export const SEED_DEMO_IDENTITIES: Record<string, string> = {
   'DEMO-SID-002': 'drv-002',
   'DEMO-SID-003': 'drv-003',
 };
+
+// Test personal codes -> seeded driver id. Latvian DDMMYY-XNNNN layout on dates that do not exist
+// (30 Feb, 31 Apr, 31 Jun), so they can never belong to a real person. Sign-in accepts only codes
+// like these (see isImpossibleDate in demoAuth.ts); any other personal-code-like input is rejected.
+export const SEED_DEMO_PERSONAL_CODES: Record<string, string> = {
+  '300291-17428': 'drv-001',
+  '310405-20716': 'drv-002',
+  '310688-13059': 'drv-003',
+};

@@ -12,12 +12,11 @@ export function RegisterConsent() {
   const existing = state.status === 'signedIn' ? state.registration.consent : undefined
   const [fakeData, setFakeData] = useState(Boolean(existing))
   const [trips, setTrips] = useState(Boolean(existing))
-  const [share, setShare] = useState(existing?.shareSummary ?? false)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!fakeData || !trips) return
-    giveConsent(share)
+    giveConsent(true)
     navigate('/register/profile')
   }
 
@@ -45,14 +44,10 @@ export function RegisterConsent() {
                 {t('Trip summaries stay local; raw locations are never stored. You can delete them any time.')}
               </span>
             </label>
-            <label className="consent consent--optional">
-              <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
-              <span>
-                <strong>{t('Optional: share my weekly score with Demo Insurer AS.')}</strong>{' '}
-                {t('Only weekly scores and totals, never trips or locations. You can switch it off any time.')}
-              </span>
-            </label>
           </div>
+          <p className="muted">
+            {t('Your weekly score and totals are shared with Demo Insurer AS, never trips or locations. You can delete your data any time.')}
+          </p>
 
           <button type="submit" className="btn btn--primary auth-form__submit" disabled={!fakeData || !trips}>
             {t('Agree and continue')}

@@ -2,7 +2,7 @@
 // desktop has no real GPS). It produces the same fixes a phone would, so the
 // real recorder, speed limit map and aggregator run on it. Trips are saved as
 // synthetic.
-import type { GpsFix } from './tripRecorder'
+import type { GpsFix } from './tripRecorder.ts'
 
 // Real Riga streets (road geometry from OpenStreetMap via the OSRM router, ©
 // OpenStreetMap contributors, fetched once and bundled): Old Riga -> 11. novembra
@@ -362,7 +362,9 @@ function fitToRoute(steps: Step[], km: number): number[] {
   return profileFrom([...steps.slice(0, -1), ['hold', cruise, extraSec], last])
 }
 
-export const SIMULATION_SPEEDUP = 12
+// Real time by default; 12x is a shortcut for quick demos.
+export const SIMULATION_SPEEDS = [1, 12] as const
+export type SimulationSpeed = (typeof SIMULATION_SPEEDS)[number]
 
 let lastPicked: SimTripId | null = null
 
@@ -391,18 +393,33 @@ export function simulatedFixes(tripId: SimTripId = 'rushed', end = Date.now()): 
   })
 }
 
-// Feeds the fixes SIMULATION_SPEEDUP times faster than real time. Timestamps end
-// at "now" so the trip lands in the current week.
-export function startSimulatedDrive(tripId: SimTripId, onFix: (fix: GpsFix) => void, onDone: () => void): () => void {
-  const fixes = simulatedFixes(tripId)
+// The fixes of one run. In real time the trip starts now and every fix carries the time at which it is
+// delivered, so elapsed minutes match the wall clock. A fast run ends now (the whole trip is stamped
+// in the past) so the trip is complete and lands in the current week straight away.
+export function fixesForRun(tripId: SimTripId, speed: SimulationSpeed, now = Date.now()): GpsFix[] {
+  if (speed === 1) {
+    const length = simulatedFixes(tripId, 0).length
+    return simulatedFixes(tripId, now + length * 1000)
+  }
+  return simulatedFixes(tripId, now)
+}
+
+// Feeds the fixes `speed` times faster than real time (1 = real time).
+export function startSimulatedDrive(
+  tripId: SimTripId,
+  onFix: (fix: GpsFix) => void,
+  onDone: () => void,
+  speed: SimulationSpeed = 1,
+): () => void {
+  const fixes = fixesForRun(tripId, speed)
   let i = 0
-  const timer = window.setInterval(() => {
+  const timer = setInterval(() => {
     if (i >= fixes.length) {
-      window.clearInterval(timer)
+      clearInterval(timer)
       onDone()
       return
     }
     onFix(fixes[i++])
-  }, 1000 / SIMULATION_SPEEDUP)
-  return () => window.clearInterval(timer)
+  }, 1000 / speed)
+  return () => clearInterval(timer)
 }

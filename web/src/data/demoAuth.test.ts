@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createDemoSmartIdAuth } from './demoAuth.ts';
+import { createDemoSmartIdAuth, isImpossibleDate } from './demoAuth.ts';
 import { createCsddMockRegistry } from './registry.ts';
+import { SEED_DEMO_IDENTITIES, SEED_DEMO_PERSONAL_CODES } from './seed.ts';
 import { isUnknown } from './types.ts';
 
 const registry = createCsddMockRegistry();
@@ -35,7 +36,34 @@ test('unknown demo identity is rejected', async () => {
   });
 });
 
-test('empty input and personal-code-like input are rejected without lookup', async () => {
+test('fictional test personal codes sign in the matching demo driver', async () => {
+  for (const [code, driverId] of [
+    ['300291-17428', 'drv-001'],
+    ['310405-20716', 'drv-002'],
+    ['31068813059', 'drv-003'],
+    [' 300291 17428 ', 'drv-001'],
+  ]) {
+    const res = await auth.signIn(code);
+    assert.ok(res.ok, code);
+    assert.equal(res.profile.driver.id, driverId);
+  }
+});
+
+test('test codes sit on dates that do not exist; real-looking codes never sign in', async () => {
+  assert.equal(isImpossibleDate('300291-17428'), true);
+  assert.equal(isImpossibleDate('310405-20716'), true);
+  assert.equal(isImpossibleDate('310688-13059'), true);
+  assert.equal(isImpossibleDate('010190-12345'), false);
+  assert.equal(isImpossibleDate('290200-20000'), false); // 29 Feb 2000 exists
+  for (const code of Object.keys(SEED_DEMO_PERSONAL_CODES)) assert.equal(isImpossibleDate(code), true, code);
+  // Even if a real-date code is put into the map, it is refused.
+  const unsafe = createDemoSmartIdAuth(registry, SEED_DEMO_IDENTITIES, { '010190-12345': 'drv-001' });
+  assert.deepEqual(await unsafe.signIn('010190-12345'), { ok: false, error: 'invalid_input' });
+  // A code that is not in the list is refused too.
+  assert.deepEqual(await auth.signIn('010190-12345'), { ok: false, error: 'invalid_input' });
+});
+
+test('empty input and unknown personal-code-like input are rejected without lookup', async () => {
   for (const input of ['', '   ', '123456-12345', '12345612345']) {
     assert.deepEqual(await auth.signIn(input), {
       ok: false,

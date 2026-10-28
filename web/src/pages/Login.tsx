@@ -3,14 +3,14 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { nextStepPath, useAuth } from '../auth/AuthContext'
 import { appApi } from '../auth/appApi'
-import { nameForDemoId } from '../demo/personas'
+import { codeForDemoId, nameForDemoId } from '../demo/personas'
 import { AppShell, Stepper } from '../components/AppShell'
 import { useT } from '../i18n'
 import './App.css'
 
 // Messages per HACK-17 contract. Never echo what the user typed.
 const ERROR_TEXT: Record<SignInError, string> = {
-  invalid_input: 'Choose a demo profile. Real personal codes are not accepted in this demo.',
+  invalid_input: 'Choose a test profile or enter one of its test personal codes. Real personal codes are never accepted.',
   unknown_identity: 'Demo profile not found. Pick one from the list.',
   data_missing: 'Profile data is unavailable. Try again or pick another profile.',
 }
@@ -97,7 +97,7 @@ export function Login() {
               )}
 
               <fieldset className="profile-picker">
-                <legend>{t('Choose a demo profile')}</legend>
+                <legend>{t('Choose a test profile')}</legend>
                 {options.map((option) => (
                   <label key={option.demoId} className="profile-option">
                     <input
@@ -112,23 +112,23 @@ export function Login() {
                     />
                     <span className="profile-option__body">
                       <span className="profile-option__name">{nameForDemoId(option.demoId, option.displayName)}</span>
-                      <span className="profile-option__id">{option.demoId}</span>
+                      <span className="profile-option__id">{codeForDemoId(option.demoId) ?? option.demoId}</span>
                     </span>
                   </label>
                 ))}
               </fieldset>
 
               <label className="field">
-                <span className="field__label">{t('Or enter a demo ID')}</span>
+                <span className="field__label">{t('Or enter a test personal code')}</span>
                 <input
                   className="field__input"
                   value={typed}
                   onChange={(e) => setTyped(e.target.value)}
-                  placeholder="DEMO-SID-001"
+                  placeholder="300291-17428"
                   autoComplete="off"
                   inputMode="text"
                 />
-                <span className="field__hint">{t('Do not enter a real personal code.')}</span>
+                <span className="field__hint">{t('Test codes only. Real personal codes are rejected and never stored.')}</span>
               </label>
 
               <button type="submit" className="btn btn--primary auth-form__submit">
