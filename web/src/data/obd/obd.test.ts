@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { validateTrip } from '../trips/validate.ts';
-import { aggregateTrip } from './aggregate.ts';
+import { aggregateTrip, PHONE_WINDOW_MS } from './aggregate.ts';
 import type { SpeedSample } from './aggregate.ts';
 import { recordDemoDrive } from './demoDrive.ts';
 import { createMockElm327, parseObdReply, readSpeed } from './elm327.ts';
@@ -79,4 +79,16 @@ test('mock dongle drive end to end produces a valid trip', async () => {
   assert.ok(trip.distanceKm > 3 && trip.distanceKm < 4, `${trip.distanceKm} km`);
   assert.equal(trip.coverage, 1);
   assert.equal(trip.nightKm, 0);
+});
+
+test('phone use counts only moving time above 10 km/h inside the activity window', () => {
+  const speeds = [...Array(10).fill(8), ...Array(20).fill(40)]; // t = 0..29 s
+  const base = { id: 'p', driverId: 'drv-001', vehicleId: null, samples: samples(speeds), limitKmh: () => 50,
+    speedLimitSource: 'road_type_default' as const, source: 'phone' as const };
+  const t0 = samples(speeds)[0].t;
+  const touchAt = [t0 + 3_000, t0 + 20_000]; // one tap while slow, one while at 40 km/h
+  const active = (t: number) => touchAt.some((m) => m <= t && t - m <= PHONE_WINDOW_MS);
+  const trip = aggregateTrip({ ...base, phoneActive: active });
+  assert.equal(trip.secPhoneUse, 6); // 20..25 s at 40 km/h; the tap at 8 km/h does not count
+  assert.equal(aggregateTrip(base).secPhoneUse, 0); // OBD and other sources that cannot know
 });

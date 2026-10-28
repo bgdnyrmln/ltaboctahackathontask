@@ -11,7 +11,7 @@ export interface SqlDriver {
 
 export type SqlValue = string | number | null;
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 // Columns added after the first release; older databases get them via ALTER
 // TABLE so existing rows load with 0.
@@ -20,6 +20,7 @@ const ADDED_COLUMNS: [name: string, ddl: string][] = [
   ['sec_over_pct_10', 'REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_10 >= 0)'],
   ['sec_over_pct_20', 'REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_20 >= 0)'],
   ['sec_over_pct_40', 'REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_40 >= 0)'],
+  ['sec_phone_use', 'REAL NOT NULL DEFAULT 0 CHECK (sec_phone_use >= 0)'],
 ];
 
 export const TRIP_SCHEMA = `
@@ -37,6 +38,7 @@ CREATE TABLE IF NOT EXISTS trip_summary (
   sec_over_pct_10    REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_10 >= 0),
   sec_over_pct_20    REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_20 >= 0),
   sec_over_pct_40    REAL NOT NULL DEFAULT 0 CHECK (sec_over_pct_40 >= 0),
+  sec_phone_use      REAL NOT NULL DEFAULT 0 CHECK (sec_phone_use >= 0),
   harsh_brake_count  INTEGER NOT NULL CHECK (harsh_brake_count >= 0),
   harsh_accel_count  INTEGER NOT NULL CHECK (harsh_accel_count >= 0),
   night_km           REAL NOT NULL CHECK (night_km >= 0),
@@ -63,6 +65,7 @@ interface TripRow {
   sec_over_pct_10: number;
   sec_over_pct_20: number;
   sec_over_pct_40: number;
+  sec_phone_use: number;
   harsh_brake_count: number;
   harsh_accel_count: number;
   night_km: number;
@@ -86,6 +89,7 @@ const fromRow = (r: TripRow): TripSummary => ({
   secOverPct10: r.sec_over_pct_10,
   secOverPct20: r.sec_over_pct_20,
   secOverPct40: r.sec_over_pct_40,
+  secPhoneUse: r.sec_phone_use,
   harshBrakeCount: r.harsh_brake_count,
   harshAccelCount: r.harsh_accel_count,
   nightKm: r.night_km,
@@ -109,6 +113,7 @@ const toParams = (t: TripSummary): SqlValue[] => [
   t.secOverPct10,
   t.secOverPct20,
   t.secOverPct40,
+  t.secPhoneUse ?? 0,
   t.harshBrakeCount,
   t.harshAccelCount,
   t.nightKm,
@@ -121,9 +126,9 @@ const toParams = (t: TripSummary): SqlValue[] => [
 const UPSERT = `INSERT OR REPLACE INTO trip_summary (
   id, driver_id, vehicle_id, started_at, ended_at, distance_km, driving_sec,
   sec_over_limit, sec_over_10, sec_over_20, sec_over_pct_10, sec_over_pct_20,
-  sec_over_pct_40, harsh_brake_count, harsh_accel_count, night_km,
+  sec_over_pct_40, sec_phone_use, harsh_brake_count, harsh_accel_count, night_km,
   max_continuous_min, coverage, speed_limit_source, source
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 // Timestamps are compared as epoch ms so mixed ISO offsets order correctly.
 export async function createSqliteTripRepository(db: SqlDriver): Promise<TripRepository> {

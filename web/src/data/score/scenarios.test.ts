@@ -30,6 +30,7 @@ test('scenarios rank in the intended order', () => {
   assert.ok(score('typical') > score('speeder'));
   assert.ok(score('speeder') > score('aggressive'));
   assert.ok(score('typical') > score('harsh_only'));
+  assert.ok(score('typical') > score('phone_heavy'));
 });
 
 test('noisy data and night alone change confidence or nothing, never the score', () => {
