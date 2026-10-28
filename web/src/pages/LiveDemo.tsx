@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { appApi } from '../auth/appApi'
 import { Logo } from '../components/Logo'
-import { PHONE_FRAME_NAME } from '../telemetry/platform'
+import { PhoneFrame } from '../components/PhoneFrame'
 import './LiveDemo.css'
 
 const DESKTOP_W = 1280
@@ -56,23 +56,7 @@ export function LiveDemo() {
       </div>
 
       <div className="live-demo__stage">
-        <figure className="phone" aria-label="Phone app">
-          <div className="phone__body">
-            <div className="phone__status" aria-hidden="true">
-              <span>9:41</span>
-              <span className="phone__notch" />
-              <span>5G ▮▮▮</span>
-            </div>
-            <iframe
-              key={`phone-${frameKey}`}
-              name={PHONE_FRAME_NAME}
-              src="/app/drive"
-              title="Fake OCTA Coach phone app"
-              className="phone__screen"
-            />
-          </div>
-          <figcaption>Mobile app (PWA)</figcaption>
-        </figure>
+        <PhoneFrame key={`phone-${frameKey}`} caption="Mobile app (PWA)" />
 
         <figure className="desktop" aria-label="Web account">
           <div className="desktop__chrome" aria-hidden="true">
