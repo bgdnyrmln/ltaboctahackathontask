@@ -2,6 +2,7 @@ import { SPEED_MAP_DEMO_LABEL } from '@data'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
+import { LiveTripMap } from '../../components/LiveTripMap'
 import { PhoneFrame } from '../../components/PhoneFrame'
 import { useDriverData } from '../../demo/useDriverData'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
@@ -115,23 +116,15 @@ export function Drive() {
         <div className="drive-sim">
           <PhoneFrame caption="Mobile app" fit />
           <div className="drive-sim__side">
-            <h1 className="app-page__title">Drive</h1>
-            <section className="panel">
-              <h2 className="panel__title">Start a trip on the phone</h2>
+            <div className="drive-sim__head">
+              <h1 className="app-page__title">Drive</h1>
               <p className="muted">
-                Trips are recorded by the mobile app, never by the web account. The phone here runs the same app. A
-                computer has no GPS, so it drives a scripted route through Riga.
+                Trips are recorded by the mobile app, never by the web account. Tap <strong>Start trip</strong> on the
+                phone: a computer has no GPS, so it drives a scripted route through Riga. Score and trips here update
+                when you save.
               </p>
-              <ol className="steps-list">
-                <li>
-                  Tap <strong>Start trip</strong> on the phone.
-                </li>
-                <li>Watch speed against the limit from the map, and harsh braking or acceleration as they happen.</li>
-                <li>
-                  Tap <strong>Stop and save</strong>. Your score and trips here update straight away (same data).
-                </li>
-              </ol>
-            </section>
+            </div>
+            <LiveTripMap />
           </div>
         </div>
       </div>
@@ -144,23 +137,25 @@ export function Drive() {
 
       {canRecord ? (
         <section className="panel drive-intro">
-          {simulator && (
+          {simulator ? (
             <p className="form-note">
-              Phone simulator: no real GPS here, so <strong>Start trip</strong> plays a scripted drive through Riga (Old
-              Riga, Krasta iela, city streets). It is saved as a synthetic trip and appears in the web account next to
-              this phone straight away.
+              <strong>Phone simulator.</strong> No real GPS here: Start trip drives a scripted route through Riga. Watch
+              it on the map next to this phone.
             </p>
+          ) : (
+            <>
+              <p>
+                Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
+                above the limit, harsh braking and harsh acceleration.
+              </p>
+              <ul className="checklist">
+                <li>Only trip totals are saved. Your route is never stored.</li>
+                <li>
+                  Speed limits come from a demo map of Riga, otherwise city 50 / out of town 90. {SPEED_MAP_DEMO_LABEL}.
+                </li>
+              </ul>
+            </>
           )}
-          <p>
-            Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
-            above the limit, harsh braking and harsh acceleration.
-          </p>
-          <ul className="checklist">
-            <li>Only trip totals are saved. Your route is never stored.</li>
-            <li>
-              Speed limits come from a demo map of Riga, otherwise city 50 / out of town 90. {SPEED_MAP_DEMO_LABEL}.
-            </li>
-          </ul>
           {status === 'denied' && (
             <p className="form-error" role="alert">
               Location permission was denied. Allow location for the app in your phone settings and try again.
