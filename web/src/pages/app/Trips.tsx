@@ -8,7 +8,13 @@ const SOURCE_LABEL: Record<string, string> = {
   obd: 'OBD',
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const dateFmt = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+})
 
 export function Trips() {
   const { trips, loading } = useDriverData()

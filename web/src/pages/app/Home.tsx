@@ -36,98 +36,117 @@ export function Home() {
     <div className="app-page">
       <h1 className="app-page__title">Hi, {firstName}</h1>
       <p className="muted">
-        This week · {fmt(totals.distanceKm, 0)} km · {report.trips} trips
+        This week · {fmt(totals.distanceKm, 0)} km · {report.trips} {report.trips === 1 ? 'trip' : 'trips'}
       </p>
 
-      <section className="panel score-panel" aria-labelledby="score-h">
-        <h2 id="score-h" className="visually-hidden">
-          Driving score
-        </h2>
-        {result.score === null ? (
-          <div className="insufficient">
-            <p className="insufficient__big">—</p>
-            <p>
-              <strong>Not enough data yet.</strong> Missing data never lowers your score.
-            </p>
-            <Link to="/app/drive" className="btn btn--primary">
-              Record a trip
-            </Link>
-          </div>
-        ) : (
-          <>
-            <ScoreRing score={result.score} label={result.band ? BAND_TEXT[result.band] : ''} />
-            {previous?.score != null && (
-              <p className={`delta ${result.score >= previous.score ? 'delta--up' : 'delta--down'}`}>
-                {result.score >= previous.score ? '▲' : '▼'} {Math.abs(result.score - previous.score)} vs previous week
-              </p>
-            )}
-          </>
-        )}
-        <p className={`confidence confidence--${result.confidence}`}>{CONFIDENCE_TEXT[result.confidence]}</p>
-      </section>
-
-      {tips.map((tip) => (
-        <section key={tip.kind} className="panel tip-card">
-          <h2 className="tip-card__title">{tip.kind === 'fatigue_context' ? 'Take breaks' : 'Tip of the week'}</h2>
-          <p>
-            {tip.text}
-            {tip.projectedScore !== null && result.score !== null && (
-              <> Your score could rise from {result.score} to about {tip.projectedScore}.</>
-            )}
-          </p>
-        </section>
-      ))}
-
-      <section className="panel">
-        <h2 className="panel__title">What shaped your score</h2>
-        <ul className="kpi-list">
-          {result.kpis.map((k) => (
-            <li key={k.id} className="kpi-row">
-              <div className="kpi-row__head">
-                <span className="kpi-row__label">{k.label}</span>
-                <span className="kpi-row__value">
-                  {k.value === null ? '—' : fmt(k.value)} <small>{k.unit}</small>
-                </span>
+      <div className="dash">
+        <div className="dash__col">
+          <section className="panel score-panel" aria-labelledby="score-h">
+            <h2 id="score-h" className="visually-hidden">
+              Driving score
+            </h2>
+            {result.score === null ? (
+              <div className="insufficient">
+                <p className="insufficient__big">—</p>
+                <p>
+                  <strong>Not enough data yet.</strong> Missing data never lowers your score.
+                </p>
+                <Link to="/app/drive" className="btn btn--primary">
+                  Record a trip
+                </Link>
               </div>
-              <div className="bar" aria-hidden="true">
-                <span style={{ width: `${k.subscore ?? 0}%` }} />
-              </div>
-              <p className="kpi-row__meta">
-                {k.subscore === null ? 'No data' : `${Math.round(k.subscore)}/100`} · weight {Math.round(k.weight * 100)}%
-                {k.pointsLost !== null && k.pointsLost >= 1 && ` · −${fmt(k.pointsLost, 0)} pts`}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <p className="context-note">
-          Night driving: {fmt(nightShare, 0)}% of distance. Context only, not scored.
-          {report.fatigueContext && ' Some long night drives without a stop.'}
-        </p>
-      </section>
+            ) : (
+              <>
+                <ScoreRing score={result.score} label={result.band ? BAND_TEXT[result.band] : ''} />
+                {previous?.score != null && (
+                  <p className={`delta ${result.score >= previous.score ? 'delta--up' : 'delta--down'}`}>
+                    {result.score >= previous.score ? '▲' : '▼'} {Math.abs(result.score - previous.score)} vs previous
+                    week
+                  </p>
+                )}
+              </>
+            )}
+            {result.score !== null && (
+              <p className={`confidence confidence--${result.confidence}`}>{CONFIDENCE_TEXT[result.confidence]}</p>
+            )}
+          </section>
 
-      <section className="panel">
-        <h2 className="panel__title">Trend</h2>
-        <div className="trend" role="img" aria-label={`Weekly scores: ${trend.map((w) => w.score ?? 'no data').join(', ')}`}>
-          {trend.map((w, i) => (
-            <div key={w.weekStart} className="trend__col">
-              <span className="trend__value">{w.score ?? '—'}</span>
-              <span
-                className={`trend__bar${i === trend.length - 1 ? ' is-current' : ''}`}
-                style={{ height: `${w.score ?? 4}%` }}
-              />
-              <span className="trend__label">{i === trend.length - 1 ? 'Now' : weekLabel(w.weekStart)}</span>
-            </div>
+          {tips.map((tip) => (
+            <section key={tip.kind} className="panel tip-card">
+              <h2 className="tip-card__title">{tip.kind === 'fatigue_context' ? 'Take breaks' : 'Tip of the week'}</h2>
+              <p>
+                {tip.text}
+                {tip.projectedScore !== null && result.score !== null && (
+                  <>
+                    {' '}
+                    Your score could rise from {result.score} to about {tip.projectedScore}.
+                  </>
+                )}
+              </p>
+            </section>
           ))}
+
+          <section className="panel octa-card">
+            <h2 className="octa-card__title">Illustrative OCTA direction</h2>
+            <p className="octa-card__band">{octa.label}</p>
+            <p className="octa-card__disclaimer">{octa.disclaimer}</p>
+          </section>
         </div>
-      </section>
 
-      <section className="panel octa-card">
-        <h2 className="octa-card__title">Illustrative OCTA direction</h2>
-        <p className="octa-card__band">{octa.label}</p>
-        <p className="octa-card__disclaimer">{octa.disclaimer}</p>
-      </section>
+        <div className="dash__col">
+          <section className="panel">
+            <h2 className="panel__title">What shaped your score</h2>
+            <ul className="kpi-list">
+              {result.kpis.map((k) => (
+                <li key={k.id} className="kpi-row">
+                  <div className="kpi-row__head">
+                    <span className="kpi-row__label">{k.label}</span>
+                    <span className="kpi-row__value">
+                      {k.value === null ? '—' : fmt(k.value)} <small>{k.unit}</small>
+                    </span>
+                  </div>
+                  <div className="bar" aria-hidden="true">
+                    <span style={{ width: `${k.subscore ?? 0}%` }} />
+                  </div>
+                  <p className="kpi-row__meta">
+                    {k.subscore === null ? 'No data' : `${Math.round(k.subscore)}/100`} · weight{' '}
+                    {Math.round(k.weight * 100)}%
+                    {k.pointsLost !== null && k.pointsLost >= 1 && ` · −${fmt(k.pointsLost, 0)} pts`}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="context-note">
+              Night driving: {fmt(nightShare, 0)}% of distance. Context only, not scored.
+              {report.fatigueContext && ' Some long night drives without a stop.'}
+            </p>
+          </section>
 
-      <p className="provisional-note">Interim scoring from the team's draft spec. Weights and thresholds are not final.</p>
+          <section className="panel">
+            <h2 className="panel__title">Trend</h2>
+            <div
+              className="trend"
+              role="img"
+              aria-label={`Weekly scores: ${trend.map((w) => w.score ?? 'no data').join(', ')}`}
+            >
+              {trend.map((w, i) => (
+                <div key={w.weekStart} className="trend__col">
+                  <span className="trend__value">{w.score ?? '—'}</span>
+                  <span
+                    className={`trend__bar${i === trend.length - 1 ? ' is-current' : ''}`}
+                    style={{ height: `${w.score ?? 4}%` }}
+                  />
+                  <span className="trend__label">{i === trend.length - 1 ? 'Now' : weekLabel(w.weekStart)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <p className="provisional-note">
+        Interim scoring from the team's draft spec. Weights and thresholds are not final.
+      </p>
     </div>
   )
 }
