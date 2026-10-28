@@ -1556,3 +1556,200 @@
   font-size: 13px;
   color: #2f80ed;
 }
+
+/* ---------- Trip list links and trip detail ---------- */
+.trip-list a.trip {
+  position: relative;
+  display: block;
+  padding-right: 40px;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.trip-list a.trip:hover {
+  box-shadow: 0 0 0 1px var(--color-accent), var(--shadow-card);
+}
+
+.trip__open {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  font-size: 24px;
+  color: var(--color-accent);
+  transform: translateY(-50%);
+}
+
+.back-link {
+  justify-self: start;
+  color: var(--color-accent);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.trip-detail__head {
+  display: grid;
+  gap: 4px;
+}
+
+.trip-map {
+  display: grid;
+  gap: 12px;
+}
+
+.trip-map__stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.trip-map__leaflet {
+  height: 360px;
+  background: #eef1f5;
+  transition: height 0.35s ease-out;
+}
+
+.trip-map__leaflet .leaflet-tile-pane {
+  filter: grayscale(1) brightness(1.06) contrast(0.88);
+}
+
+.trip-map.is-big .trip-map__leaflet {
+  height: min(72dvh, 680px);
+}
+
+.trip-map__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.trip-map__controls .btn {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.trip-map__progress {
+  flex: 1;
+  min-width: 80px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--color-accent-tint);
+}
+
+.trip-map__progress span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.seg button {
+  padding: 8px 12px;
+  border: 0;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.seg button + button {
+  border-left: 1px solid var(--color-border);
+}
+
+.seg button.is-on {
+  background: var(--color-accent-tint);
+  color: var(--color-accent-strong);
+  font-weight: 500;
+}
+
+.ltm-car--dot span {
+  clip-path: none;
+  border-radius: 50%;
+  inset: 8px;
+}
+
+.impact__delta {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.impact__delta small {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+.impact__delta.is-up {
+  color: #2e9e3a;
+}
+
+.impact__delta.is-down {
+  color: var(--color-accent-strong);
+}
+
+.compare {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compare li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.compare__label {
+  font-weight: 500;
+}
+
+.compare__trip {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  text-align: right;
+}
+
+.compare__trip small {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.compare__trip.is-good {
+  color: #2e9e3a;
+}
+
+.compare__trip.is-bad {
+  color: var(--color-accent-strong);
+}
+
+.compare__week {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* Larger map spans the whole width on desktop */
+@media (min-width: 992px) {
+  .trip-detail .dash:has(.trip-map.is-big) {
+    grid-template-columns: 1fr;
+  }
+}

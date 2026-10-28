@@ -2,7 +2,8 @@ import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
-import { PLACES, pickRandomSimTrip, simTrip, startSimulatedDrive } from './simulatedDrive'
+import { PLACES, pickRandomSimTrip, simTrip, startSimulatedDrive, type SimTripId } from './simulatedDrive'
+import { rememberSimTrip } from './tripAnalysis'
 import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
@@ -24,6 +25,7 @@ export function useTripRecording() {
   const stopSimulation = useRef<(() => void) | null>(null)
   const [routeDone, setRouteDone] = useState(false)
   const eventCounts = useRef({ brake: 0, accel: 0 })
+  const simTripId = useRef<SimTripId | null>(null)
 
   // Feed one fix to the recorder, update the screen and broadcast it to the live map.
   const ingest = useCallback((fix: GpsFix) => {
@@ -75,6 +77,7 @@ export function useTripRecording() {
     if (isPhoneSimulator()) {
       // No GPS in a desktop browser: drive a random scripted Riga trip through the same recorder.
       const tripId = pickRandomSimTrip()
+      simTripId.current = tripId
       const trip = simTrip(tripId)
       postLiveTrip({ type: 'start', at: Date.now(), from: PLACES[trip.from].name, to: PLACES[trip.to].name })
       setError(null)
@@ -138,6 +141,9 @@ export function useTripRecording() {
       cleanup()
       const last = recorder.current?.stats()
       const trip = recorder.current?.finish(driverId, vehicleId) ?? null
+      // Simulated trips can be replayed later from their script (no positions stored).
+      if (trip && trip.source === 'synthetic' && simTripId.current) rememberSimTrip(trip.id, simTripId.current)
+      simTripId.current = null
       postLiveTrip({
         type: 'end',
         saved: trip !== null,
