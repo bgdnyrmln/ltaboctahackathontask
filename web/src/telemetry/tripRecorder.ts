@@ -1,7 +1,7 @@
 // Collects live phone GPS speed samples and turns them into one TripSummary with
 // Agent C's shared aggregator (same rules as the OBD path). Positions are used only
 // to derive speed when the device reports none; they are never stored.
-import { aggregateTrip, getSpeedLimitMap, speedingBands, type SpeedSample, type TripSummary } from '@data'
+import { aggregateTrip, getSpeedLimitMap, PHONE_WINDOW_MS, speedingBands, type SpeedSample, type TripSummary } from '@data'
 
 export type GpsFix = {
   t: number // epoch ms
@@ -24,6 +24,7 @@ export type LiveStats = {
   accuracy: number | null
   samples: number
   rejected: number
+  phoneUseSec: number
 }
 
 const MAX_ACCURACY_M = 30
@@ -59,6 +60,7 @@ export class TripRecorder {
   private speedKmh = 0
   private accuracy: number | null = null
   private rejected = 0
+  private phoneMarks: number[] = [] // epoch ms of in-app touches / app switches, ascending
   private readonly startedAt = Date.now()
 
   // Phone GPS by default; the website's phone simulator records synthetic trips.
@@ -103,6 +105,21 @@ export class TripRecorder {
     this.samples.push({ t: fix.t, speedKmh: kmh })
   }
 
+  // Call on touch/pointer events on the driving screen and on visibilitychange.
+  // Only the timestamp is kept, never what was touched.
+  markPhoneActivity(t: number = Date.now()) {
+    const last = this.phoneMarks[this.phoneMarks.length - 1]
+    if (last === undefined || t - last >= 250) this.phoneMarks.push(t)
+  }
+
+  private phoneActive(t: number): boolean {
+    for (let i = this.phoneMarks.length - 1; i >= 0; i--) {
+      const m = this.phoneMarks[i]
+      if (m <= t) return t - m <= PHONE_WINDOW_MS
+    }
+    return false
+  }
+
   private aggregate(driverId: string, vehicleId: string | null): TripSummary | null {
     if (this.samples.length < 2) return null
     return aggregateTrip({
@@ -111,6 +128,7 @@ export class TripRecorder {
       vehicleId,
       samples: this.samples,
       limitKmh: (t) => this.limits.get(t) ?? URBAN_LIMIT,
+      phoneActive: (t) => this.phoneActive(t),
       speedLimitSource:
         this.speedSamples > 0 && this.mapHits / this.speedSamples >= MAP_SHARE_FOR_SOURCE ? 'map' : 'road_type_default',
       source: this.source,
@@ -136,6 +154,7 @@ export class TripRecorder {
       accuracy: this.accuracy,
       samples: this.samples.length,
       rejected: this.rejected,
+      phoneUseSec: summary?.secPhoneUse ?? 0,
     }
   }
 

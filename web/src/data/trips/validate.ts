@@ -22,14 +22,17 @@ const COUNTERS = [
   'secOverPct10',
   'secOverPct20',
   'secOverPct40',
+  'secPhoneUse',
   'harshBrakeCount',
   'harshAccelCount',
   'nightKm',
 ] as const;
 
-// Trips stored before the relative bands existed load with them as 0.
-export function upgradeTrip(trip: Omit<TripSummary, 'secOverPct10' | 'secOverPct20' | 'secOverPct40'> & Partial<TripSummary>): TripSummary {
-  return { secOverPct10: 0, secOverPct20: 0, secOverPct40: 0, ...trip };
+type AddedLater = 'secOverPct10' | 'secOverPct20' | 'secOverPct40' | 'secPhoneUse';
+
+// Trips stored before these counters existed load with them as 0.
+export function upgradeTrip(trip: Omit<TripSummary, AddedLater> & Partial<TripSummary>): TripSummary {
+  return { secOverPct10: 0, secOverPct20: 0, secOverPct40: 0, secPhoneUse: 0, ...trip };
 }
 
 const INTEGER_COUNTERS = new Set(['harshBrakeCount', 'harshAccelCount']);
@@ -78,6 +81,9 @@ export function validateTrip(trip: TripSummary): void {
     if (trip.secOverLimit > trip.drivingSec) {
       problems.push('secOverLimit exceeds drivingSec');
     }
+    if (trip.secPhoneUse > trip.drivingSec) {
+      problems.push('secPhoneUse exceeds drivingSec');
+    }
     if (trip.nightKm > trip.distanceKm) problems.push('nightKm exceeds distanceKm');
   }
 
@@ -115,6 +121,7 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
     secOverPct10: 0,
     secOverPct20: 0,
     secOverPct40: 0,
+    secPhoneUse: 0,
     harshBrakeCount: 0,
     harshAccelCount: 0,
     nightKm: 0,

@@ -15,6 +15,7 @@ export interface DrivingProfile {
   coverage: number;
   speedLimitSource: TripSummary['speedLimitSource'];
   improvement: number; // 0.4 = oldest week 40% worse, improving to the newest
+  phoneShare: number; // share of driving time with phone use
 }
 
 export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: DrivingProfile }> = {
@@ -31,6 +32,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       coverage: 0.97,
       speedLimitSource: 'road_type_default',
       improvement: 0,
+      phoneShare: 0.003,
     },
   },
   'drv-002': {
@@ -46,6 +48,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       coverage: 0.95,
       speedLimitSource: 'road_type_default',
       improvement: 0.4,
+      phoneShare: 0.04,
     },
   },
   'drv-003': {
@@ -61,6 +64,7 @@ export const DEMO_PROFILES: Record<string, { vehicleId: string; profile: Driving
       coverage: 0.6,
       speedLimitSource: 'unknown',
       improvement: 0,
+      phoneShare: 0,
     },
   },
 };
@@ -152,6 +156,9 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
       const secOverPct10 = Math.round((secOverLimit + secOver10) / 2);
       const secOverPct20 = secOver10;
       const secOverPct40 = secOver20;
+      // Separate stream so adding this field left every existing number unchanged.
+      const phoneRnd = mulberry32(hashSeed(`${driverId}|${weekStart}|${i}|phone`));
+      const secPhoneUse = Math.min(drivingSec, Math.round(drivingSec * profile.phoneShare * factor * between(phoneRnd, 0.5, 1.5)));
 
       trips.push({
         id: `syn-${driverId}-${weekStart}-${String(i).padStart(2, '0')}`,
@@ -167,6 +174,7 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
         secOverPct10,
         secOverPct20,
         secOverPct40,
+        secPhoneUse,
         harshBrakeCount: poisson((profile.brakePer100 * factor * distanceKm) / 100, rnd),
         harshAccelCount: poisson((profile.accelPer100 * factor * distanceKm) / 100, rnd),
         nightKm: night ? distanceKm : 0,
