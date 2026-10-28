@@ -9,6 +9,7 @@ import { ProfileTab } from './pages/app/ProfileTab'
 import { TripDetail } from './pages/app/TripDetail'
 import { Trips } from './pages/app/Trips'
 import { InsurerData, InsurerDriver, InsurerLayout, InsurerLogin, InsurerPortfolio } from './insurer/InsurerPortal'
+import { InsurerSearch } from './insurer/InsurerSearch'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { RegisterConsent } from './pages/RegisterConsent'
@@ -36,7 +37,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/insurer/login" element={<InsurerLogin />} />
       <Route path="/insurer" element={<InsurerLayout />}>
-        <Route index element={<InsurerPortfolio />} />
+        <Route index element={<InsurerSearch />} />
+        <Route path="portfolio" element={<InsurerPortfolio />} />
         <Route path="drivers/:id" element={<InsurerDriver />} />
         <Route path="data" element={<InsurerData />} />
       </Route>

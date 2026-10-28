@@ -1,21 +1,14 @@
 import { inputsFromProfile, profileRisk } from '@data'
-import { useState } from 'react'
-import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileDetails } from '../../components/ProfileDetails'
-import { useDriverData } from '../../demo/useDriverData'
 
 const P_RANGE = '0.8–1.3'
 
 export function ProfileTab() {
-  const { state, signOut, markSignedOut, giveConsent } = useAuth()
-  const { trips, deleteMyData } = useDriverData()
-  const navigate = useNavigate()
-  const [confirming, setConfirming] = useState(false)
+  const { state, signOut } = useAuth()
   if (state.status !== 'signedIn') return null
 
   const risk = profileRisk(inputsFromProfile(state.profile, new Date()), new Date())
-  const consent = state.registration.consent
 
   return (
     <div className="app-page">
@@ -50,47 +43,6 @@ export function ProfileTab() {
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="panel">
-          <h2 className="panel__title">Privacy</h2>
-          <p className="muted">{trips.length} recent trip summaries stored on this device.</p>
-          <label className="share-toggle">
-            <input
-              type="checkbox"
-              checked={Boolean(consent?.shareSummary)}
-              onChange={(e) => giveConsent(e.target.checked)}
-            />
-            <span>
-              <strong>Share my weekly score with Demo Insurer AS</strong>
-              <small>Weekly scores and totals only, never trips or locations. Shows up in the insurer portal.</small>
-            </span>
-          </label>
-          {!confirming ? (
-            <button type="button" className="btn btn--outline" onClick={() => setConfirming(true)}>
-              Delete my trip data
-            </button>
-          ) : (
-            <div className="confirm">
-              <p>Delete all your trips on this device and sign out? This cannot be undone.</p>
-              <div className="btn-row">
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={async () => {
-                    await deleteMyData()
-                    markSignedOut()
-                    navigate('/login', { replace: true })
-                  }}
-                >
-                  Delete
-                </button>
-                <button type="button" className="btn btn--outline" onClick={() => setConfirming(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
         </section>
       </div>
 
