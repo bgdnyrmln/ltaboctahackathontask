@@ -1,4 +1,13 @@
-import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { recentWeeks, type TrendPoint, type TripSummary, type WeeklyReport } from '@data'
 import { api } from '../auth/AuthContext'
 
@@ -11,6 +20,7 @@ type DriverData = {
   trend: TrendPoint[]
   trips: TripSummary[] // recent weeks, newest first
   addTrip: (trip: TripSummary) => Promise<void>
+  recordDemoObdTrip: () => Promise<TripSummary>
   deleteMyData: () => Promise<number>
   resetDemo: () => Promise<void>
 }
@@ -48,6 +58,11 @@ export function DriverDataProvider({ children }: { children: ReactNode }) {
       async addTrip(trip) {
         await api.saveTrip(trip)
         await reload()
+      },
+      async recordDemoObdTrip() {
+        const trip = await api.recordDemoObdTrip()
+        await reload()
+        return trip
       },
       async deleteMyData() {
         const { tripsDeleted } = await api.deleteMyData()

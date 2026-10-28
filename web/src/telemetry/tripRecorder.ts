@@ -1,9 +1,9 @@
-// Turns live phone GPS samples into one TripSummary (Agent C's storage shape), using
-// the measurement rules from docs/driver-score-spec-draft.md. Raw positions are only
-// held in memory while recording and are never stored (data minimisation).
-import type { TripSummary } from '@data'
+// Collects live phone GPS speed samples and turns them into one TripSummary with
+// Agent C's shared aggregator (same rules as the OBD path). Positions are used only
+// to derive speed when the device reports none; they are never stored.
+import { aggregateTrip, type SpeedSample, type TripSummary } from '@data'
 
-export type GpsSample = {
+export type GpsFix = {
   t: number // epoch ms
   lat: number
   lon: number
@@ -12,7 +12,6 @@ export type GpsSample = {
 }
 
 export type LiveStats = {
-  startedAt: number
   elapsedSec: number
   distanceKm: number
   speedKmh: number
@@ -25,183 +24,100 @@ export type LiveStats = {
   rejected: number
 }
 
-// Thresholds from the draft spec (illustrative, not approved).
 const MAX_ACCURACY_M = 30
-const GAP_SEC = 3
-const MOVING_KMH = 5
-const LIMIT_TOLERANCE_KMH = 3
-const HARSH_MS2 = 3
-const HARSH_MIN_SEC = 1
-const HARSH_MERGE_SEC = 3
+const MAX_PLAUSIBLE_KMH = 216
+const TOLERANCE_KMH = 3
+// Road-type default limit: urban 50 unless sustained >70 km/h for a minute, then 90.
 const URBAN_LIMIT = 50
 const RURAL_LIMIT = 90
-const RURAL_AFTER_SEC = 60 // sustained >70 km/h switches the default limit to rural
+const RURAL_AFTER_MS = 60_000
 const MIN_TRIP_KM = 1
 const MIN_TRIP_SEC = 180
-const STOP_BREAK_MS = 15 * 60 * 1000 // a stop this long ends a continuous stretch
 
-function haversineKm(a: GpsSample, b: GpsSample) {
-  const R = 6371
+function haversineKm(a: GpsFix, b: GpsFix) {
   const toRad = (d: number) => (d * Math.PI) / 180
   const dLat = toRad(b.lat - a.lat)
   const dLon = toRad(b.lon - a.lon)
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
-const isNight = (t: number) => {
-  const h = new Date(t).getHours()
-  return h >= 23 || h < 5
+  return 2 * 6371 * Math.asin(Math.sqrt(h))
 }
 
 export class TripRecorder {
-  private last: GpsSample | null = null
-  private lastSpeedMs = 0
-  private fastSince: number | null = null
+  private samples: SpeedSample[] = []
+  private limits = new Map<number, number>()
+  private lastFix: GpsFix | null = null
   private limit = URBAN_LIMIT
-  private brakeRun = 0
-  private accelRun = 0
-  private lastBrakeAt = -Infinity
-  private lastAccelAt = -Infinity
-
-  private distanceKm = 0
-  private nightKm = 0
-  private drivingSec = 0
-  private validSec = 0
-  private secOverLimit = 0
-  private secOver10 = 0
-  private secOver20 = 0
-  private harshBrakeCount = 0
-  private harshAccelCount = 0
-  private stretchStart: number | null = null
-  private stopSince: number | null = null
-  private maxContinuousMin = 0
-  private samples = 0
-  private rejected = 0
+  private fastSince: number | null = null
   private speedKmh = 0
   private accuracy: number | null = null
-  readonly startedAt = Date.now()
+  private rejected = 0
+  private readonly startedAt = Date.now()
 
-  add(sample: GpsSample) {
-    this.accuracy = sample.accuracy
-    if (sample.accuracy > MAX_ACCURACY_M) {
+  add(fix: GpsFix) {
+    this.accuracy = fix.accuracy
+    if (fix.accuracy > MAX_ACCURACY_M) {
       this.rejected++
+      this.samples.push({ t: fix.t, speedKmh: null }) // counts against coverage
       return
     }
-    this.samples++
-    const prev = this.last
-    this.last = sample
-    if (!prev) return
-
-    const dt = (sample.t - prev.t) / 1000
-    if (dt <= 0) return
-    if (dt > GAP_SEC) {
-      // Gap in data: count the distance but not the time as valid coverage.
-      this.distanceKm += haversineKm(prev, sample)
-      this.lastSpeedMs = 0
-      return
-    }
-
-    const segKm = haversineKm(prev, sample)
-    const speedMs = sample.speed ?? (segKm * 1000) / dt
-    // Drop physically implausible jumps (> 60 m/s ~ 216 km/h).
-    if (speedMs > 60) {
+    const prev = this.lastFix
+    this.lastFix = fix
+    let kmh = fix.speed !== null ? fix.speed * 3.6 : null
+    if (kmh === null && prev && fix.t > prev.t) kmh = (haversineKm(prev, fix) / (fix.t - prev.t)) * 3_600_000
+    if (kmh === null || kmh > MAX_PLAUSIBLE_KMH) {
       this.rejected++
+      this.samples.push({ t: fix.t, speedKmh: null })
       return
     }
-    const kmh = speedMs * 3.6
-    this.speedKmh = kmh
-    this.validSec += dt
-    this.distanceKm += segKm
-    if (isNight(sample.t)) this.nightKm += segKm
 
-    if (kmh < MOVING_KMH) {
-      this.stopSince ??= sample.t
-      if (sample.t - this.stopSince >= STOP_BREAK_MS) this.stretchStart = null
-      this.lastSpeedMs = speedMs
-      this.brakeRun = this.accelRun = 0
-      return
-    }
-    this.drivingSec += dt
-    this.stopSince = null
-    this.stretchStart ??= sample.t
-    this.maxContinuousMin = Math.max(this.maxContinuousMin, (sample.t - this.stretchStart) / 60000)
-
-    // Road-type default limit: urban 50 unless sustained >70 km/h, then rural 90.
     if (kmh > 70) {
-      this.fastSince ??= sample.t
-      if ((sample.t - this.fastSince) / 1000 >= RURAL_AFTER_SEC) this.limit = RURAL_LIMIT
+      this.fastSince ??= fix.t
+      if (fix.t - this.fastSince >= RURAL_AFTER_MS) this.limit = RURAL_LIMIT
     } else {
       this.fastSince = null
       if (kmh < 55) this.limit = URBAN_LIMIT
     }
-    const over = kmh - this.limit
-    if (over > LIMIT_TOLERANCE_KMH) this.secOverLimit += dt
-    if (over > 10) this.secOver10 += dt
-    if (over > 20) this.secOver20 += dt
+    this.speedKmh = kmh
+    this.limits.set(fix.t, this.limit)
+    this.samples.push({ t: fix.t, speedKmh: kmh })
+  }
 
-    // Harsh events from speed change: |a| >= 3 m/s² for >= 1 s, merged within 3 s.
-    const a = (speedMs - this.lastSpeedMs) / dt
-    this.lastSpeedMs = speedMs
-    const now = sample.t / 1000
-    this.brakeRun = a <= -HARSH_MS2 ? this.brakeRun + dt : 0
-    this.accelRun = a >= HARSH_MS2 ? this.accelRun + dt : 0
-    if (this.brakeRun >= HARSH_MIN_SEC && now - this.lastBrakeAt > HARSH_MERGE_SEC) {
-      this.harshBrakeCount++
-      this.lastBrakeAt = now
-    }
-    if (this.accelRun >= HARSH_MIN_SEC && now - this.lastAccelAt > HARSH_MERGE_SEC) {
-      this.harshAccelCount++
-      this.lastAccelAt = now
-    }
+  private aggregate(driverId: string, vehicleId: string | null): TripSummary | null {
+    if (this.samples.length < 2) return null
+    return aggregateTrip({
+      id: `phone-${this.startedAt}`,
+      driverId,
+      vehicleId,
+      samples: this.samples,
+      limitKmh: (t) => this.limits.get(t) ?? URBAN_LIMIT,
+      speedLimitSource: 'road_type_default',
+      source: 'phone',
+      expectedHz: 1,
+    })
   }
 
   stats(): LiveStats {
-    const elapsedSec = (Date.now() - this.startedAt) / 1000
+    const summary = this.aggregate('live', null)
     return {
-      startedAt: this.startedAt,
-      elapsedSec,
-      distanceKm: this.distanceKm,
+      elapsedSec: (Date.now() - this.startedAt) / 1000,
+      distanceKm: summary?.distanceKm ?? 0,
       speedKmh: this.speedKmh,
       limitKmh: this.limit,
-      overLimit: this.speedKmh - this.limit > LIMIT_TOLERANCE_KMH,
-      harshBrakes: this.harshBrakeCount,
-      harshAccels: this.harshAccelCount,
+      overLimit: this.speedKmh - this.limit > TOLERANCE_KMH,
+      harshBrakes: summary?.harshBrakeCount ?? 0,
+      harshAccels: summary?.harshAccelCount ?? 0,
       accuracy: this.accuracy,
-      samples: this.samples,
+      samples: this.samples.length,
       rejected: this.rejected,
     }
   }
 
   // Returns null when the trip is too short to count (spec: < 1 km or < 3 min).
   finish(driverId: string, vehicleId: string | null): TripSummary | null {
-    const endedAt = Date.now()
-    const elapsedSec = (endedAt - this.startedAt) / 1000
-    if (this.distanceKm < MIN_TRIP_KM || elapsedSec < MIN_TRIP_SEC) return null
-    const drivingSec = Math.round(this.drivingSec)
-    const overLimit = Math.min(Math.round(this.secOverLimit), drivingSec)
-    const over10 = Math.min(Math.round(this.secOver10), overLimit)
-    const over20 = Math.min(Math.round(this.secOver20), over10)
-    const distanceKm = Math.round(this.distanceKm * 100) / 100
-    return {
-      id: `phone-${this.startedAt}`,
-      driverId,
-      vehicleId,
-      startedAt: new Date(this.startedAt).toISOString(),
-      endedAt: new Date(endedAt).toISOString(),
-      distanceKm,
-      drivingSec,
-      secOverLimit: overLimit,
-      secOver10: over10,
-      secOver20: over20,
-      harshBrakeCount: this.harshBrakeCount,
-      harshAccelCount: this.harshAccelCount,
-      nightKm: Math.min(Math.round(this.nightKm * 100) / 100, distanceKm),
-      maxContinuousMin: Math.min(Math.round(this.maxContinuousMin), Math.floor(elapsedSec / 60)),
-      coverage: Math.round(Math.min(1, this.validSec / Math.max(1, elapsedSec)) * 100) / 100,
-      speedLimitSource: 'road_type_default',
-      source: 'phone',
-    }
+    const trip = this.aggregate(driverId, vehicleId)
+    if (!trip) return null
+    const seconds = (Date.parse(trip.endedAt) - Date.parse(trip.startedAt)) / 1000
+    return trip.distanceKm < MIN_TRIP_KM || seconds < MIN_TRIP_SEC ? null : trip
   }
 }
 

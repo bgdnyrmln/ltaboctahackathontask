@@ -1,8 +1,9 @@
+import { OBD_DEMO_LABEL } from '@data'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
-import { simulateTrip } from '../../demo/simulateTrip'
 import { useDriverData } from '../../demo/useDriverData'
+import { isNativeMobileApp } from '../../telemetry/platform'
 import { MIN_TRIP } from '../../telemetry/tripRecorder'
 import { useTripRecording } from '../../telemetry/useTripRecording'
 
@@ -14,12 +15,14 @@ const mmss = (sec: number) => {
 
 export function Drive() {
   const { state } = useAuth()
-  const { addTrip } = useDriverData()
+  const { addTrip, recordDemoObdTrip } = useDriverData()
   const { status, stats, error, start, stop } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
+  const [obdBusy, setObdBusy] = useState(false)
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
 
+  const canRecord = isNativeMobileApp()
   const driverId = state.profile.driver.id
   const vehicleId = state.profile.vehicles[0]?.id ?? null
   const active = status === 'recording' || status === 'requesting'
@@ -34,74 +37,20 @@ export function Drive() {
     navigate('/app/trips', { state: { saved: trip.id } })
   }
 
-  const simulate = async (style: 'calm' | 'rushed') => {
-    await addTrip(simulateTrip(driverId, vehicleId, style))
-    navigate('/app', { replace: false })
+  const runDemoDongle = async () => {
+    setObdBusy(true)
+    try {
+      const trip = await recordDemoObdTrip()
+      navigate('/app/trips', { state: { saved: trip.id } })
+    } finally {
+      setObdBusy(false)
+    }
   }
 
-  return (
-    <div className="app-page">
-      <h1 className="app-page__title">Drive</h1>
-
-      {!active ? (
-        <>
-          <section className="panel drive-intro">
-            <p>
-              Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS:
-              time above the limit, harsh braking and harsh acceleration.
-            </p>
-            <ul className="checklist">
-              <li>Keep the app open with the screen on (web apps can't record in the background).</li>
-              <li>Only trip totals are saved. Your route is never stored.</li>
-              <li>Speed limits are approximate (city 50, out of town 90).</li>
-            </ul>
-            {status === 'denied' && (
-              <p className="form-error" role="alert">
-                Location permission was denied. Allow location for this site in your browser settings and try again.
-              </p>
-            )}
-            {status === 'unsupported' && (
-              <p className="form-error" role="alert">
-                This browser has no location access. Use the simulated trip below.
-              </p>
-            )}
-            {error && status === 'error' && (
-              <p className="form-error" role="alert">
-                {error}
-              </p>
-            )}
-            {message && (
-              <p className="form-note" role="status">
-                {message}
-              </p>
-            )}
-            <button
-              type="button"
-              className="btn btn--primary btn--big"
-              onClick={() => {
-                setMessage(null)
-                start()
-              }}
-              disabled={status === 'unsupported'}
-            >
-              Start trip
-            </button>
-          </section>
-
-          <section className="panel">
-            <h2 className="panel__title">No car nearby?</h2>
-            <p className="muted">Add a simulated trip (labelled synthetic) to see how the score reacts.</p>
-            <div className="btn-row">
-              <button type="button" className="btn btn--outline" onClick={() => simulate('calm')}>
-                Calm trip
-              </button>
-              <button type="button" className="btn btn--outline" onClick={() => simulate('rushed')}>
-                Rushed trip
-              </button>
-            </div>
-          </section>
-        </>
-      ) : (
+  if (active) {
+    return (
+      <div className="app-page">
+        <h1 className="app-page__title">Drive</h1>
         <section className="panel live" aria-live="polite">
           <p className="live__status">
             <span className="live__dot" aria-hidden="true" />
@@ -112,7 +61,6 @@ export function Drive() {
             <small>km/h</small>
           </p>
           <p className="muted">Assumed limit {stats?.limitKmh ?? 50} km/h</p>
-
           <dl className="live__grid">
             <div>
               <dt>Time</dt>
@@ -132,7 +80,8 @@ export function Drive() {
             </div>
           </dl>
           <p className="muted live__gps">
-            GPS accuracy: {stats?.accuracy != null ? `±${Math.round(stats.accuracy)} m` : '—'} · samples {stats?.samples ?? 0}
+            GPS accuracy: {stats?.accuracy != null ? `±${Math.round(stats.accuracy)} m` : '—'} · samples{' '}
+            {stats?.samples ?? 0}
             {stats && stats.rejected > 0 ? ` (${stats.rejected} rejected)` : ''}
           </p>
           {error && <p className="form-note">{error}</p>}
@@ -140,7 +89,78 @@ export function Drive() {
             Stop and save
           </button>
         </section>
+      </div>
+    )
+  }
+
+  return (
+    <div className="app-page">
+      <h1 className="app-page__title">Drive</h1>
+
+      {canRecord ? (
+        <section className="panel drive-intro">
+          <p>
+            Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
+            above the limit, harsh braking and harsh acceleration.
+          </p>
+          <ul className="checklist">
+            <li>Only trip totals are saved. Your route is never stored.</li>
+            <li>Speed limits are approximate (city 50, out of town 90).</li>
+          </ul>
+          {status === 'denied' && (
+            <p className="form-error" role="alert">
+              Location permission was denied. Allow location for the app in your phone settings and try again.
+            </p>
+          )}
+          {error && status === 'error' && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          {message && (
+            <p className="form-note" role="status">
+              {message}
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn btn--primary btn--big"
+            onClick={() => {
+              setMessage(null)
+              start()
+            }}
+          >
+            Start trip
+          </button>
+        </section>
+      ) : (
+        <section className="panel app-only">
+          <div className="app-only__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h2 className="app-only__title">Trips are recorded in the mobile app</h2>
+          <p className="muted">
+            Live recording needs the phone's GPS and runs only in the Fake OCTA Coach app on iOS or Android. Here you
+            can follow your score, trips and tips; anything you record on the phone shows up automatically.
+          </p>
+          <button type="button" className="btn btn--primary" disabled>
+            Start trip (mobile app only)
+          </button>
+        </section>
       )}
+
+      <section className="panel">
+        <h2 className="panel__title">Demo: connect a car</h2>
+        <p className="muted">
+          {OBD_DEMO_LABEL}. Plays a short scripted city drive through a mock OBD-II adapter and saves it.
+        </p>
+        <button type="button" className="btn btn--outline" onClick={runDemoDongle} disabled={obdBusy}>
+          {obdBusy ? 'Reading the dongle…' : 'Run demo drive'}
+        </button>
+      </section>
     </div>
   )
 }
