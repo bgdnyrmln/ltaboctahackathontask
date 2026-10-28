@@ -69,3 +69,126 @@ export function analyzeSimTrip(simTripId: SimTripId, startedAt: string, endedAt:
   const trip = SIM_TRIPS.find((t) => t.id === simTripId)!
   return { points, events, trip }
 }
+
+// ---------------------------------------------------------------------------
+// Illustrative routes for trips without recorded positions (generated demo trips,
+// demo OBD trips). A static Riga route is picked per trip and the trip's real
+// totals are laid onto it: its distance, its share of time over the limit and its
+// number of harsh events. Positions are illustrative, the numbers are the trip's.
+
+type TripLike = {
+  id: string
+  startedAt: string
+  endedAt: string
+  distanceKm: number
+  drivingSec: number
+  secOverLimit: number
+  secOver10: number
+  harshBrakeCount: number
+  harshAccelCount: number
+}
+
+function hashOf(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return h >>> 0
+}
+
+function rng(seed: number) {
+  let s = seed || 1
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0
+    return s / 4294967296
+  }
+}
+
+const kmBetween = (a: [number, number], b: [number, number]) => {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(b[0] - a[0])
+  const dLon = toRad(b[1] - a[1])
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLon / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.sqrt(h))
+}
+
+// Path of at least `km`: the route, then back and forth if the trip is longer.
+function pathFor(route: Array<[number, number]>, km: number) {
+  const path = [...route]
+  let length = 0
+  for (let i = 1; i < path.length; i++) length += kmBetween(path[i - 1], path[i])
+  const routeKm = length
+  let forward = false
+  while (length < km && routeKm > 0) {
+    const leg = forward ? route : [...route].reverse()
+    path.push(...leg.slice(1))
+    length += routeKm
+    forward = !forward
+  }
+  return path
+}
+
+function pointOnPath(path: Array<[number, number]>, cum: number[], km: number): [number, number] {
+  let i = cum.findIndex((c) => c >= km)
+  if (i <= 0) return i === 0 ? path[0] : path[path.length - 1]
+  const f = (km - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+  return [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * f, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * f]
+}
+
+export function illustrativeRoute(
+  trip: TripLike,
+  routes: Array<{ from: string; to: string; km: number; points: Array<[number, number]> }>,
+) {
+  const rand = rng(hashOf(trip.id))
+  // Prefer routes close to the trip's length; pick among them deterministically.
+  const ranked = [...routes].sort((a, b) => Math.abs(a.km - trip.distanceKm) - Math.abs(b.km - trip.distanceKm))
+  const pick = ranked[Math.floor(rand() * Math.min(3, ranked.length))]
+  const reverse = rand() < 0.5
+  const base = reverse ? [...pick.points].reverse() : pick.points
+  const path = pathFor(base, trip.distanceKm)
+  const cum = [0]
+  for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + kmBetween(path[i - 1], path[i]))
+
+  const n = Math.max(60, Math.min(600, Math.round(trip.drivingSec / 5)))
+  const start = Date.parse(trip.startedAt)
+  const durMs = Math.max(1, Date.parse(trip.endedAt) - start)
+  const avg = trip.drivingSec > 0 ? trip.distanceKm / (trip.drivingSec / 3600) : 40
+
+  // Over-limit stretches: the trip's share of time, in one to three stretches.
+  const over = new Array<boolean>(n).fill(false)
+  const overSamples = Math.round((trip.drivingSec > 0 ? trip.secOverLimit / trip.drivingSec : 0) * n)
+  if (overSamples > 0) {
+    const k = Math.min(overSamples, 1 + Math.floor(rand() * 3))
+    const each = Math.ceil(overSamples / k)
+    for (let j = 0; j < k; j++) {
+      const slot = Math.floor(n / k)
+      const from = j * slot + Math.floor(rand() * Math.max(1, slot - each))
+      for (let i = from; i < Math.min(n, from + each); i++) over[i] = true
+    }
+  }
+  const severe = trip.secOverLimit > 0 && trip.secOver10 / trip.secOverLimit > 0.4
+  const limits = getSpeedLimitMap()
+
+  const points: RoutePoint[] = []
+  for (let i = 0; i < n; i++) {
+    const f = i / (n - 1)
+    const [lat, lon] = pointOnPath(path, cum, f * trip.distanceKm)
+    const limit = limits.lookup(lat, lon)?.limitKmh ?? 50
+    const wobble = 1 + Math.sin(i / 5) * 0.06
+    const kmh = over[i] ? limit + (severe ? 14 : 7) * wobble : Math.min(limit - 3, avg * wobble)
+    points.push({ lat, lon, t: start + f * durMs, kmh: Math.max(0, kmh), limit, state: over[i] ? 'over' : 'ok' })
+  }
+
+  // Harsh events at deterministic spots along the route.
+  const events: RouteEvent[] = []
+  const place = (kind: 'brake' | 'accel', count: number) => {
+    for (let j = 0; j < count; j++) {
+      const p = points[Math.min(n - 1, Math.floor(((j + 0.3 + rand() * 0.4) / count) * (n - 1)))]
+      events.push({ lat: p.lat, lon: p.lon, kind, t: p.t })
+    }
+  }
+  place('brake', trip.harshBrakeCount)
+  place('accel', trip.harshAccelCount)
+
+  const from = reverse ? pick.to : pick.from
+  const to = path.length > base.length ? from : reverse ? pick.from : pick.to
+  return { points, events, from, to }
+}

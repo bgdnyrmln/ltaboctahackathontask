@@ -61,9 +61,9 @@ function Hero() {
           <Link to={hero.primaryCta.href} className="btn btn--primary">
             {hero.primaryCta.label}
           </Link>
-          <Link to={hero.secondaryCta.href} className="btn btn--outline-light">
+          <a href={hero.secondaryCta.href} className="btn btn--outline-light">
             {hero.secondaryCta.label}
-          </Link>
+          </a>
         </div>
 
         <div className="hero__copy">

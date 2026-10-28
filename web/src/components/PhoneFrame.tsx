@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { PHONE_FRAME_NAME } from '../telemetry/platform'
-import '../pages/LiveDemo.css'
+import './PhoneFrame.css'
 
 const PHONE_W = 390
 const PHONE_H = 800
