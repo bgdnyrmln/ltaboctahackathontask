@@ -1043,15 +1043,359 @@
   justify-self: center;
 }
 
-/* Desktop-only sidebar link to the phone + web live demo */
-.tabbar__extra {
-  display: none;
+/* Drive on desktop: the phone simulator next to the instructions */
+.drive-sim {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
 }
 
+.drive-sim__side {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.drive-sim__head {
+  display: grid;
+  gap: 6px;
+}
+
+.drive-sim__head .muted {
+  max-width: 70ch;
+}
+
+.steps-list {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.steps-list li::marker {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Drive with phone simulator: fit one screen at 100% zoom */
 @media (min-width: 992px) {
-  .tabbar__extra {
-    display: flex;
-    margin-top: auto;
-    border: 1px dashed var(--color-border);
+  .app-page--drive-sim {
+    padding-top: 0;
   }
+
+  .mobile-app__content:has(.app-page--drive-sim) {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .drive-sim {
+    gap: 24px;
+  }
+}
+
+/* ---------- Live trip map (Drive on desktop) ---------- */
+.ltm {
+  gap: 14px;
+}
+
+.ltm__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ltm__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.ltm__status--live {
+  color: var(--color-accent-strong);
+  font-weight: 500;
+}
+
+.ltm__status--live::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.ltm__stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+
+.ltm__map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 300px);
+  min-height: 300px;
+  background: #eef1f5;
+}
+
+.ltm-city {
+  fill: #eef1f5;
+}
+
+.ltm-river {
+  fill: none;
+  stroke: #b9dcf0;
+  stroke-width: 54;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ltm-zone {
+  fill: rgba(255, 109, 69, 0.1);
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+}
+
+.ltm-road-casing {
+  fill: none;
+  stroke: #d3d9e1;
+  stroke-width: 26;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ltm-road {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ltm-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  fill: var(--color-text);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 6px;
+}
+
+.ltm-label--road {
+  text-anchor: start;
+  font-size: 20px;
+}
+
+.ltm-label--river {
+  fill: #4a8db5;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.ltm-sign circle {
+  fill: #fff;
+  stroke: #e3262b;
+  stroke-width: 6;
+}
+
+.ltm-sign text {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 20px;
+  text-anchor: middle;
+  fill: #1d1d1f;
+}
+
+.ltm-trail {
+  stroke: #2e9e3a;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.ltm-trail--over {
+  stroke: var(--color-accent-strong);
+}
+
+.ltm-pin path {
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.ltm-pin--brake path {
+  fill: #b3261e;
+}
+
+.ltm-pin--accel path {
+  fill: #e8a317;
+}
+
+.ltm-pin text {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 18px;
+  text-anchor: middle;
+  fill: #fff;
+}
+
+.ltm-pin .ltm-pin__label {
+  font-size: 18px;
+  fill: var(--color-text);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 6px;
+}
+
+.ltm-car {
+  fill: var(--color-accent);
+  stroke: #fff;
+  stroke-width: 4;
+}
+
+.ltm-car-pulse {
+  fill: rgba(255, 109, 69, 0.3);
+  animation: car-pulse 1.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes car-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.ltm__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(248, 249, 251, 0.55);
+}
+
+.ltm__overlay p {
+  padding: 12px 18px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.ltm__readout {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 10px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  border-left: 4px solid #2e9e3a;
+  transition: border-color 0.3s ease-out;
+}
+
+.ltm__readout.is-over {
+  border-left-color: var(--color-accent-strong);
+}
+
+.ltm__speed {
+  font-family: var(--font-heading);
+  font-weight: 300;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.ltm__readout.is-over .ltm__speed {
+  color: var(--color-accent-strong);
+}
+
+.ltm__speed small {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.ltm__limit {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.ltm__summary {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.ltm__summary-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+}
+
+.ltm__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.ltm-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ltm-key::before {
+  content: '';
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.ltm-key--ok::before {
+  background: #2e9e3a;
+}
+
+.ltm-key--over::before {
+  background: var(--color-accent-strong);
+}
+
+.ltm-key--brake::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b3261e;
+}
+
+.ltm-key--accel::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e8a317;
+}
+
+.ltm__note {
+  flex-basis: 100%;
 }

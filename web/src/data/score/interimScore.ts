@@ -74,7 +74,7 @@ export const KPI_DEFS: KpiDef[] = [
 ];
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const subscoreOf = (def: KpiDef, x: number) => 100 * (1 - clamp01((x - def.good) / (def.bad - def.good)));
+const subscoreOf = (def: { good: number; bad: number }, x: number) => 100 * (1 - clamp01((x - def.good) / (def.bad - def.good)));
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
 export function confidenceOf(t: TripTotals): Confidence {
@@ -136,6 +136,8 @@ const TIP_TEXT: Record<KpiId, (from: number, to: number) => string> = {
     `You braked hard ${from} times per 100 km. Leaving more distance ahead could bring it to about ${to}.`,
   harsh_accel_per_100km: (from, to) =>
     `You accelerated hard ${from} times per 100 km. Smoother starts could bring it to about ${to}.`,
+  fatigue_excess_min: (from, to) =>
+    `Your longest drive ran ${from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about ${to}.`,
 };
 
 // One main tip: the KPI losing the most points, with the score the driver would
@@ -154,9 +156,8 @@ export function buildTips(result: ScoreResult, fatigue: boolean): Tip[] {
       .sort((a, b) => (b.pointsLost ?? 0) - (a.pointsLost ?? 0))[0];
     if (worst && worst.value !== null) {
       const target = r1(Math.max(worst.good, worst.value - (worst.value - worst.good) / 2));
-      const def = KPI_DEFS.find((d) => d.id === worst.id)!;
       // Compare like with like: both points on the observed (unsmoothed) scale.
-      const gained = worst.weight * (subscoreOf(def, target) - subscoreOf(def, worst.value));
+      const gained = worst.weight * (subscoreOf(worst, target) - subscoreOf(worst, worst.value));
       tips.push({
         kind: worst.id,
         text: TIP_TEXT[worst.id](worst.value, target),
@@ -164,10 +165,10 @@ export function buildTips(result: ScoreResult, fatigue: boolean): Tip[] {
       });
     }
   }
-  if (fatigue) {
+  if (fatigue && tips[0]?.kind !== 'fatigue_excess_min') {
     tips.push({
       kind: 'fatigue_context',
-      text: 'Some night drives ran over 2 hours without a stop. Plan a short break every 2 hours. This does not affect your score.',
+      text: 'Some night drives ran over 2 hours without a stop. Plan a short break every 2 hours.',
       projectedScore: null,
     });
   }

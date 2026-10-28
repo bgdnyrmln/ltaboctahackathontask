@@ -63,11 +63,13 @@
   }
 }
 
-.live-demo figure {
+.live-demo figure,
+.phone {
   margin: 0;
 }
 
-.live-demo figcaption {
+.live-demo figcaption,
+.phone figcaption {
   margin-top: 12px;
   font-family: var(--font-heading);
   font-weight: 700;
@@ -176,5 +178,14 @@
   top: 0;
   left: 0;
   border: 0;
+  transform-origin: top left;
+}
+
+/* Scaled phone: the layout box shrinks with the phone */
+.phone__fit {
+  position: relative;
+}
+
+.phone__fit .phone__body {
   transform-origin: top left;
 }

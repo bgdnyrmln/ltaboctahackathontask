@@ -1,7 +1,9 @@
-import { OBD_DEMO_LABEL, SPEED_MAP_DEMO_LABEL } from '@data'
-import { useState } from 'react'
+import { SPEED_MAP_DEMO_LABEL } from '@data'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
+import { LiveTripMap } from '../../components/LiveTripMap'
+import { PhoneFrame } from '../../components/PhoneFrame'
 import { useDriverData } from '../../demo/useDriverData'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
 import { SIMULATION_SPEEDUP } from '../../telemetry/simulatedDrive'
@@ -14,12 +16,25 @@ const mmss = (sec: number) => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+// Desktop-width screens show the phone simulator; narrow browsers get the app-only notice.
+function useIsDesktop() {
+  const query = '(min-width: 992px)'
+  const [desktop, setDesktop] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setDesktop(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return desktop
+}
+
 export function Drive() {
   const { state } = useAuth()
-  const { addTrip, recordDemoObdTrip } = useDriverData()
+  const { addTrip } = useDriverData()
   const { status, stats, error, routeDone, start, stop } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
-  const [obdBusy, setObdBusy] = useState(false)
+  const isDesktop = useIsDesktop()
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
 
@@ -37,16 +52,6 @@ export function Drive() {
     }
     await addTrip(trip)
     navigate('/app/trips', { state: { saved: trip.id } })
-  }
-
-  const runDemoDongle = async () => {
-    setObdBusy(true)
-    try {
-      const trip = await recordDemoObdTrip()
-      navigate('/app/trips', { state: { saved: trip.id } })
-    } finally {
-      setObdBusy(false)
-    }
   }
 
   if (active) {
@@ -104,29 +109,53 @@ export function Drive() {
     )
   }
 
+  // On a computer the web account cannot record; it shows the phone app instead.
+  if (!canRecord && isDesktop) {
+    return (
+      <div className="app-page app-page--drive-sim">
+        <div className="drive-sim">
+          <PhoneFrame caption="Mobile app" fit />
+          <div className="drive-sim__side">
+            <div className="drive-sim__head">
+              <h1 className="app-page__title">Drive</h1>
+              <p className="muted">
+                Trips are recorded by the mobile app, never by the web account. Tap <strong>Start trip</strong> on the
+                phone: a computer has no GPS, so it drives a scripted route through Riga. Score and trips here update
+                when you save.
+              </p>
+            </div>
+            <LiveTripMap />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app-page">
       <h1 className="app-page__title">Drive</h1>
 
       {canRecord ? (
         <section className="panel drive-intro">
-          {simulator && (
+          {simulator ? (
             <p className="form-note">
-              Phone simulator: no real GPS here, so <strong>Start trip</strong> plays a scripted drive through Riga (Old
-              Riga, Krasta iela, city streets). It is saved as a synthetic trip and appears in the web account next to
-              this phone straight away.
+              <strong>Phone simulator.</strong> No real GPS here: Start trip drives a scripted route through Riga. Watch
+              it on the map next to this phone.
             </p>
+          ) : (
+            <>
+              <p>
+                Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
+                above the limit, harsh braking and harsh acceleration.
+              </p>
+              <ul className="checklist">
+                <li>Only trip totals are saved. Your route is never stored.</li>
+                <li>
+                  Speed limits come from a demo map of Riga, otherwise city 50 / out of town 90. {SPEED_MAP_DEMO_LABEL}.
+                </li>
+              </ul>
+            </>
           )}
-          <p>
-            Put the phone in a holder and start before you drive. We measure speed and speed changes from GPS: time
-            above the limit, harsh braking and harsh acceleration.
-          </p>
-          <ul className="checklist">
-            <li>Only trip totals are saved. Your route is never stored.</li>
-            <li>
-              Speed limits come from a demo map of Riga, otherwise city 50 / out of town 90. {SPEED_MAP_DEMO_LABEL}.
-            </li>
-          </ul>
           {status === 'denied' && (
             <p className="form-error" role="alert">
               Location permission was denied. Allow location for the app in your phone settings and try again.
@@ -171,16 +200,6 @@ export function Drive() {
           </button>
         </section>
       )}
-
-      <section className="panel">
-        <h2 className="panel__title">Demo: connect a car</h2>
-        <p className="muted">
-          {OBD_DEMO_LABEL}. Plays a short scripted city drive through a mock OBD-II adapter and saves it.
-        </p>
-        <button type="button" className="btn btn--outline" onClick={runDemoDongle} disabled={obdBusy}>
-          {obdBusy ? 'Reading the dongle…' : 'Run demo drive'}
-        </button>
-      </section>
     </div>
   )
 }
