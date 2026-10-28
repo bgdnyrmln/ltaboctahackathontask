@@ -1462,3 +1462,13 @@
 .ltm-place--right em {
   left: 42px;
 }
+
+.ltm__follow {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  z-index: 1100;
+  min-height: 40px;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-card);
+}
