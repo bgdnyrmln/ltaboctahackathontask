@@ -142,3 +142,31 @@ svg {
     animation: none !important;
   }
 }
+
+/* Laptop screens at 100% browser zoom (e.g. 1366x768 at 125% Windows scaling,
+   or 1440x900 MacBooks) give a small viewport. Render the desktop layout at 90%,
+   which is what looks right there; large monitors stay at 100%. */
+@media (min-width: 992px) and (max-width: 1599px), (min-width: 992px) and (max-height: 860px) {
+  html {
+    zoom: 0.9;
+  }
+}
+
+/* Under the 90% zoom, viewport-height units shrink too: stretch full-height
+   blocks back to the real window height. */
+@media (min-width: 992px) and (max-width: 1599px), (min-width: 992px) and (max-height: 860px) {
+  .mobile-app,
+  .app-shell,
+  .ins,
+  .ins-login {
+    min-height: calc(100dvh / 0.9);
+  }
+
+  .hero {
+    min-height: min(calc(100svh / 0.9), 920px);
+  }
+
+  .tabbar {
+    height: calc(100dvh / 0.9 - 68px) !important;
+  }
+}

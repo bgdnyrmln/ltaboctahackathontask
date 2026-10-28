@@ -29,9 +29,11 @@ export function PhoneFrame({
     const measure = () => {
       const el = box.current
       if (!el) return
-      const top = el.getBoundingClientRect().top + window.scrollY
-      const available = window.innerHeight - top - BOTTOM_GAP - (caption ? CAPTION_H : 0)
-      setScale(Math.max(MIN_SCALE, Math.min(1, available / PHONE_H)))
+      const rect = el.getBoundingClientRect()
+      // Page zoom (CSS zoom on laptops) makes 1 CSS px smaller on screen; account for it.
+      const z = el.offsetWidth > 0 ? rect.width / el.offsetWidth : 1
+      const available = window.innerHeight - (rect.top + window.scrollY) - BOTTOM_GAP - (caption ? CAPTION_H : 0)
+      setScale(Math.max(MIN_SCALE, Math.min(1, available / (PHONE_H * z))))
     }
     measure()
     window.addEventListener('resize', measure)

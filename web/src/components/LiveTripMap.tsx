@@ -153,7 +153,9 @@ export function LiveTripMap() {
       const stage = stageEl.current
       const rot = rotatorEl.current
       if (!stage || !rot) return
-      const { width: w, height: h } = stage.getBoundingClientRect()
+      // Layout size in CSS px (not getBoundingClientRect, which includes page zoom).
+      const w = stage.offsetWidth
+      const h = stage.offsetHeight
       const d = Math.ceil(Math.hypot(w, h))
       rot.style.width = `${d}px`
       rot.style.height = `${d}px`

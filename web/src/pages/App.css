@@ -2225,3 +2225,18 @@
     height: 460px;
   }
 }
+
+/* Drive (phone + live map side by side) needs more room than other pages:
+   shrink it a bit further on laptop screens (about 0.77 overall). */
+@media (min-width: 992px) and (max-width: 1599px), (min-width: 992px) and (max-height: 860px) {
+  .app-page--drive-sim {
+    zoom: 0.85;
+  }
+}
+
+/* Drive at ~0.77: let the map use the real window height */
+@media (min-width: 992px) and (max-width: 1599px), (min-width: 992px) and (max-height: 860px) {
+  .app-page--drive-sim .ltm__stage {
+    height: clamp(300px, calc(100dvh / 0.765 - 330px), 760px);
+  }
+}
