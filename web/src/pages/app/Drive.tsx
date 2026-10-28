@@ -111,11 +111,11 @@ export function Drive() {
   // On a computer the web account cannot record; it shows the phone app instead.
   if (!canRecord && isDesktop) {
     return (
-      <div className="app-page">
-        <h1 className="app-page__title">Drive</h1>
+      <div className="app-page app-page--drive-sim">
         <div className="drive-sim">
-          <PhoneFrame caption="Mobile app" />
+          <PhoneFrame caption="Mobile app" fit />
           <div className="drive-sim__side">
+            <h1 className="app-page__title">Drive</h1>
             <section className="panel">
               <h2 className="panel__title">Start a trip on the phone</h2>
               <p className="muted">

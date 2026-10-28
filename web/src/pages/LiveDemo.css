@@ -180,3 +180,12 @@
   border: 0;
   transform-origin: top left;
 }
+
+/* Scaled phone: the layout box shrinks with the phone */
+.phone__fit {
+  position: relative;
+}
+
+.phone__fit .phone__body {
+  transform-origin: top left;
+}
