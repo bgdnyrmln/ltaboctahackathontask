@@ -172,6 +172,9 @@ svg {
 .lang-switch {
   flex: none;
   white-space: nowrap;
+  width: fit-content;
+  align-self: flex-start;
+  justify-self: start;
 }
 .lang-switch__btn {
   flex: none;
