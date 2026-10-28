@@ -15,7 +15,7 @@ export const PEAK_CAP = 60;
 export const MAP_LIMIT_SHARE_MIN = 0.5; // km share with a map speed limit
 // Weights (sum 1), preliminary like the thresholds. The phone KPI only exists when the trip
 // totals carry secPhoneUse; without it the four-KPI weights apply.
-export const D_WEIGHTS: Record<Exclude<KpiId, 'phone_use_share'>, number> = {
+export const D_WEIGHTS: Record<Exclude<KpiId, 'phone_use_share' | 'too_slow_share'>, number> = {
   speeding_share: 0.45,
   harsh_brake_per_100km: 0.25,
   harsh_accel_per_100km: 0.15,
@@ -27,7 +27,20 @@ export const D_WEIGHTS_WITH_PHONE: Record<KpiId, number> = {
   harsh_accel_per_100km: 0.1,
   fatigue_excess_min: 0.15,
   phone_use_share: 0.2,
+  too_slow_share: 0,
 };
+// With the far-below-the-limit flag as a small sixth KPI (needs secPhoneUse as well).
+export const D_WEIGHTS_FULL: Record<KpiId, number> = {
+  speeding_share: 0.3,
+  harsh_brake_per_100km: 0.2,
+  harsh_accel_per_100km: 0.1,
+  fatigue_excess_min: 0.15,
+  phone_use_share: 0.2,
+  too_slow_share: 0.05,
+};
+export const SLOW_GOOD = 0; // % of driving time
+export const SLOW_BAD = 20;
+const SLOW_PRIOR = 3; // typical share in urban traffic, %
 export const PHONE_GOOD = 0; // % of driving time
 export const PHONE_BAD = 5;
 const PHONE_PRIOR = 1; // typical share, % of driving time, used for small-sample smoothing
@@ -39,10 +52,14 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
 // secPhoneUse arrives with C's storage change; until then the field is simply absent.
-export type PhoneAwareTotals = TripTotals & { secPhoneUse?: number };
+export type PhoneAwareTotals = TripTotals & { secPhoneUse?: number; secTooSlow?: number };
 
 export function hasPhoneData(t: PhoneAwareTotals): boolean {
   return typeof t.secPhoneUse === 'number' && Number.isFinite(t.secPhoneUse);
+}
+
+export function hasSlowData(t: PhoneAwareTotals): boolean {
+  return typeof t.secTooSlow === 'number' && Number.isFinite(t.secTooSlow);
 }
 
 export function isValidTotals(t: PhoneAwareTotals): boolean {
@@ -57,6 +74,7 @@ export function isValidTotals(t: PhoneAwareTotals): boolean {
     t.secOverPct40 <= t.secOverPct20 &&
     t.secOverPct20 <= t.secOverPct10 &&
     t.secOverPct10 <= t.secOverLimit &&
+    (t.secTooSlow === undefined || (Number.isFinite(t.secTooSlow) && t.secTooSlow >= 0 && t.secTooSlow <= t.drivingSec)) &&
     (t.secPhoneUse === undefined || (Number.isFinite(t.secPhoneUse) && t.secPhoneUse >= 0 && t.secPhoneUse <= t.drivingSec)) &&
     t.secOverLimit <= t.drivingSec &&
     Number.isFinite(t.coverage) && t.coverage >= 0 && t.coverage <= 1
@@ -106,7 +124,12 @@ export function createDScore(smoothing = 1): ScoreFn {
   return (totals, trips) => {
     const valid = isValidTotals(totals);
     const withPhone = valid && hasPhoneData(totals);
-    const weights: Record<KpiId, number> = withPhone ? D_WEIGHTS_WITH_PHONE : { ...D_WEIGHTS, phone_use_share: 0 };
+    const withSlow = withPhone && hasSlowData(totals);
+    const weights: Record<KpiId, number> = withSlow
+      ? D_WEIGHTS_FULL
+      : withPhone
+        ? D_WEIGHTS_WITH_PHONE
+        : { ...D_WEIGHTS, phone_use_share: 0, too_slow_share: 0 };
     const confidence = valid ? confidenceWithLimits(confidenceOf(totals), trips) : 'insufficient';
 
     const kpis: KpiResult[] = KPI_DEFS.map((def, i) => {
@@ -168,6 +191,28 @@ export function createDScore(smoothing = 1): ScoreFn {
         good: PHONE_GOOD,
         bad: PHONE_BAD,
         pointsLost: sub === null ? null : r1(weights.phone_use_share * (100 - sub)),
+      });
+    }
+
+    if (withSlow) {
+      const sec = (totals as PhoneAwareTotals).secTooSlow ?? 0;
+      const observed = totals.drivingSec > 0 ? (sec / totals.drivingSec) * 100 : null;
+      const denom = totals.drivingSec + PRIOR_SEC * smoothing;
+      const smoothed = denom > 0 ? ((sec + (SLOW_PRIOR / 100) * PRIOR_SEC * smoothing) / denom) * 100 : null;
+      const sub =
+        observed === null || smoothed === null
+          ? null
+          : 100 * (1 - clamp01((smoothed - SLOW_GOOD) / (SLOW_BAD - SLOW_GOOD)));
+      kpis.push({
+        id: 'too_slow_share',
+        label: 'Far below the limit',
+        value: observed === null ? null : r1(observed),
+        unit: '% of driving time',
+        subscore: sub === null ? null : r1(sub),
+        weight: weights.too_slow_share,
+        good: SLOW_GOOD,
+        bad: SLOW_BAD,
+        pointsLost: sub === null ? null : r1(weights.too_slow_share * (100 - sub)),
       });
     }
 
