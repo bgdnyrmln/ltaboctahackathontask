@@ -162,5 +162,16 @@ export function useTripRecording() {
     [cleanup],
   )
 
-  return { status, stats, error, routeDone, start, stop }
+  // Phone use while driving (D's phone KPI): touches on the driving screen and
+  // leaving/returning to the app while a trip records. Other apps, calls and unlocks
+  // are not visible to a web app.
+  const markPhone = useCallback(() => recorder.current?.markPhoneActivity(), [])
+  useEffect(() => {
+    if (status !== 'recording') return
+    const onVisibility = () => recorder.current?.markPhoneActivity()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [status])
+
+  return { status, stats, error, routeDone, start, stop, markPhone }
 }

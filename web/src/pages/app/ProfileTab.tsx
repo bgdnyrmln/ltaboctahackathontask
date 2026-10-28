@@ -1,9 +1,11 @@
-import { isUnknown } from '@data'
+import { inputsFromProfile, profileRisk } from '@data'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileDetails } from '../../components/ProfileDetails'
 import { useDriverData } from '../../demo/useDriverData'
+
+const P_RANGE = '0.8–1.3'
 
 export function ProfileTab() {
   const { state, signOut, markSignedOut } = useAuth()
@@ -12,12 +14,8 @@ export function ProfileTab() {
   const [confirming, setConfirming] = useState(false)
   if (state.status !== 'signedIn') return null
 
-  const { driver, vehicles } = state.profile
+  const risk = profileRisk(inputsFromProfile(state.profile, new Date()), new Date())
   const consent = state.registration.consent
-  const licenceYears = isUnknown(driver.licenseSince)
-    ? null
-    : new Date().getFullYear() - new Date(driver.licenseSince).getFullYear()
-  const vehicleYear = vehicles[0] && !isUnknown(vehicles[0].year) ? vehicles[0].year : null
 
   return (
     <div className="app-page">
@@ -30,25 +28,28 @@ export function ProfileTab() {
         </section>
 
         <section className="panel">
-          <h2 className="panel__title">Profile factors (separate from your score)</h2>
+          <h2 className="panel__title">Profile factors (separate from your driving)</h2>
           <p className="muted">
-            Static data you can't change by driving differently. Shown for transparency; not part of the 0–100 behaviour
-            score and not used in tips. A combined price layer is a team proposal, not approved.
+            Static data you can't change by driving differently. It gives a bounded factor (×{P_RANGE}) applied on top
+            of the behaviour score; tips stay behaviour-only. Current factor: <strong>×{risk.p.toFixed(2)}</strong>.
           </p>
-          <dl className="facts">
-            <div>
-              <dt>Driving experience</dt>
-              <dd>{licenceYears === null ? 'Not available' : `${licenceYears} years`}</dd>
-            </div>
-            <div>
-              <dt>Vehicle age</dt>
-              <dd>{vehicleYear === null ? 'Not available' : `${new Date().getFullYear() - vehicleYear} years`}</dd>
-            </div>
-            <div>
-              <dt>Driver age</dt>
-              <dd>Not used</dd>
-            </div>
-          </dl>
+          <ul className="factors-list">
+            {risk.factors.map((f) => (
+              <li key={f.id} className={f.known ? '' : 'is-unknown'}>
+                <span>
+                  <strong>{f.label}</strong>
+                  <small>{f.known ? f.detail : 'No data'}</small>
+                </span>
+                <span className="factors-list__adj">
+                  {f.known
+                    ? f.adjustment === 0
+                      ? '±0'
+                      : `${f.adjustment > 0 ? '+' : ''}${f.adjustment.toFixed(2)}`
+                    : '—'}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="panel">
