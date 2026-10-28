@@ -4,7 +4,7 @@
 // vehicle age exist in C's mock data today; the other inputs are skipped as
 // "no data" until they are added. All numbers are preliminary and illustrative.
 import { isInspectionOverdue, known } from '../types.ts';
-import type { Profile } from '../types.ts';
+import type { Maybe, Profile } from '../types.ts';
 
 export const P_MIN = 0.8;
 export const P_MAX = 1.3;
@@ -12,6 +12,8 @@ export const P_MAX = 1.3;
 export interface ProfileInputs {
   licenseSince?: string | null; // ISO date
   vehicleYear?: number | null;
+  powerKw?: number | null; // engine power from the registration certificate
+  massKg?: number | null; // kerb mass
   claimsLast5y?: number | null; // count of at-fault incidents
   penaltyPoints?: number | null;
   inspectionOverdue?: boolean | null;
@@ -19,7 +21,7 @@ export interface ProfileInputs {
 }
 
 export interface ProfileFactor {
-  id: 'experience' | 'claims' | 'penalties' | 'vehicle_age' | 'inspection' | 'driver_age';
+  id: 'experience' | 'claims' | 'penalties' | 'vehicle_age' | 'vehicle_power' | 'inspection' | 'driver_age';
   label: string;
   detail: string;
   adjustment: number; // added to 1.0; 0 when the input is missing
@@ -102,6 +104,22 @@ export function profileRisk(inputs: ProfileInputs, now: Date, includeAge = true)
     });
   }
 
+  // Power-to-weight: a small, bounded nudge. A faster car never overrides how someone drives.
+  const kw = inputs.powerKw;
+  const kg = inputs.massKg;
+  if (!kw || !kg || !Number.isFinite(kw) || !Number.isFinite(kg) || kw <= 0 || kg <= 0) {
+    factors.push(missing('vehicle_power', 'Vehicle power-to-weight'));
+  } else {
+    const ratio = (kw / kg) * 1000; // kW per tonne
+    factors.push({
+      id: 'vehicle_power',
+      label: 'Vehicle power-to-weight',
+      detail: `${Math.round(ratio)} kW/t`,
+      adjustment: ratio >= 120 ? 0.03 : ratio >= 90 ? 0.01 : 0,
+      known: true,
+    });
+  }
+
   if (inputs.inspectionOverdue === null || inputs.inspectionOverdue === undefined) {
     factors.push(missing('inspection', 'Technical inspection'));
   } else {
@@ -134,6 +152,8 @@ export function profileRisk(inputs: ProfileInputs, now: Date, includeAge = true)
   return { p: r2(p), factors };
 }
 
+type VehicleSpecs = { powerKw?: Maybe<number>; massKg?: Maybe<number> };
+
 // Maps C's mock Profile onto the profile inputs. Missing fields stay null and
 // are skipped by profileRisk. Age comes from birth year only (data minimisation).
 export function inputsFromProfile(profile: Profile, now: Date = new Date()): ProfileInputs {
@@ -146,6 +166,9 @@ export function inputsFromProfile(profile: Profile, now: Date = new Date()): Pro
     penaltyPoints: known(driver.penaltyPoints),
     driverAge: birthYear === null ? null : now.getUTCFullYear() - birthYear,
     vehicleYear: vehicle ? known(vehicle.year) : null,
+    // Specs arrive with C's HACK-27 change; until then the fields are simply absent.
+    powerKw: vehicle ? known((vehicle as VehicleSpecs).powerKw) : null,
+    massKg: vehicle ? known((vehicle as VehicleSpecs).massKg) : null,
     inspectionOverdue: vehicle ? isInspectionOverdue(vehicle, now) : null,
   };
 }

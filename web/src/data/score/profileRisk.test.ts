@@ -70,7 +70,7 @@ test('maps C mock profiles, including unknown fields', () => {
   };
   assert.deepEqual(inputsFromProfile(full, NOW), {
     licenseSince: '2016-05-01', claimsLast5y: 0, penaltyPoints: 0, driverAge: 36,
-    vehicleYear: 2019, inspectionOverdue: false,
+    vehicleYear: 2019, powerKw: null, massKg: null, inspectionOverdue: false,
   });
   const sparse: Profile = {
     driver: { id: 'd', displayName: 'x', licenseCategories: UNKNOWN, licenseSince: UNKNOWN, synthetic: true },
@@ -78,7 +78,7 @@ test('maps C mock profiles, including unknown fields', () => {
   };
   assert.deepEqual(inputsFromProfile(sparse, NOW), {
     licenseSince: null, claimsLast5y: null, penaltyPoints: null, driverAge: null,
-    vehicleYear: null, inspectionOverdue: null,
+    vehicleYear: null, powerKw: null, massKg: null, inspectionOverdue: null,
   });
   assert.equal(profileRisk(inputsFromProfile(sparse, NOW), NOW).p, 1);
 });
@@ -93,4 +93,17 @@ test('seed drivers get distinct, sensible coefficients', () => {
   assert.ok(p('drv-002') > 1.2, 'new driver with an incident and an overdue inspection should be well above 1');
   assert.equal(p('drv-003'), 1, 'driver with unknown data gets the neutral coefficient');
   assert.equal(finalScore(72, profileRisk(inputsFromProfile({ driver: SEED_DRIVERS[2], vehicles: [] }, NOW), NOW)).final, 72);
+});
+
+test('power-to-weight is a small bounded nudge and never rescues or ruins a profile alone', () => {
+  const p = (powerKw: number | null, massKg: number | null) => profileRisk({ powerKw, massKg }, NOW).p;
+  assert.equal(p(110, 1350), 1); // about 81 kW/t
+  assert.equal(p(100, 1000), 1.01); // 100 kW/t
+  assert.equal(p(200, 1400), 1.03); // about 143 kW/t
+  assert.equal(p(null, 1400), 1);
+  assert.equal(p(110, 0), 1);
+  // The whole car side (old, overdue inspection, very powerful) stays modest.
+  const worstCar = profileRisk({ vehicleYear: 2005, inspectionOverdue: true, powerKw: 250, massKg: 1200 }, NOW);
+  assert.equal(worstCar.p, 1.11);
+  assert.equal(finalScore(80, worstCar).final, 72);
 });
