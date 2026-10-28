@@ -10,7 +10,8 @@ export type KpiId =
   | 'harsh_brake_per_100km'
   | 'harsh_accel_per_100km'
   | 'fatigue_excess_min'
-  | 'phone_use_share';
+  | 'phone_use_share'
+  | 'too_slow_share';
 
 export interface KpiResult {
   id: KpiId;
