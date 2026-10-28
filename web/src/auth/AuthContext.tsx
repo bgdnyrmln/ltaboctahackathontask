@@ -1,15 +1,13 @@
-import { createCsddMockRegistry, createDemoSmartIdAuth, type Profile, type SignInResult } from '@data'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { getApi, type Profile, type SignInResult } from '@data'
 
-// Agent C's mock providers. A real identity/registry provider replaces only these two lines.
-const registry = createCsddMockRegistry()
-export const identityProvider = createDemoSmartIdAuth(registry)
+// Agent C's API owns the demo session; this context adds registration progress.
+export const api = getApi()
 
-const STORAGE_KEY = 'foc.session'
+const registrationKey = (driverId: string) => `foc.registration.${driverId}`
 
-// Only the demo handle and registration flags are stored, never profile data.
-type StoredSession = {
-  demoId: string
+// Only consent flags and timestamps are stored here, never profile data.
+export type Registration = {
   consent?: { trips: true; shareSummary: boolean; at: string }
   registeredAt?: string
 }
@@ -17,61 +15,54 @@ type StoredSession = {
 type AuthState =
   | { status: 'loading' }
   | { status: 'signedOut' }
-  | { status: 'signedIn'; profile: Profile; session: StoredSession }
+  | { status: 'signedIn'; profile: Profile; registration: Registration }
 
 type AuthContextValue = {
   state: AuthState
   signIn: (demoId: string) => Promise<SignInResult>
   giveConsent: (shareSummary: boolean) => void
   completeRegistration: () => void
-  signOut: () => void
+  signOut: () => Promise<void>
+  markSignedOut: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function readSession(): StoredSession | null {
+function readRegistration(driverId: string): Registration {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as StoredSession) : null
+    return JSON.parse(localStorage.getItem(registrationKey(driverId)) ?? '{}') as Registration
   } catch {
-    return null
+    return {}
   }
 }
 
-function writeSession(session: StoredSession | null) {
+function writeRegistration(driverId: string, registration: Registration) {
   try {
-    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-    else localStorage.removeItem(STORAGE_KEY)
+    localStorage.setItem(registrationKey(driverId), JSON.stringify(registration))
   } catch {
-    // Storage unavailable (private mode): the session lasts for this page view only.
+    // Storage unavailable (private mode): progress lasts for this page view only.
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading' })
 
-  // Restore a previous demo session by signing in again with the stored handle.
   useEffect(() => {
-    const stored = readSession()
-    if (!stored) {
-      setState({ status: 'signedOut' })
-      return
-    }
-    identityProvider.signIn(stored.demoId).then((result) => {
-      if (result.ok) setState({ status: 'signedIn', profile: result.profile, session: stored })
-      else {
-        writeSession(null)
-        setState({ status: 'signedOut' })
-      }
+    api.getSession().then((profile) => {
+      setState(
+        profile
+          ? { status: 'signedIn', profile, registration: readRegistration(profile.driver.id) }
+          : { status: 'signedOut' },
+      )
     })
   }, [])
 
-  const updateSession = useCallback((patch: Partial<StoredSession>) => {
+  const updateRegistration = useCallback((patch: Partial<Registration>) => {
     setState((current) => {
       if (current.status !== 'signedIn') return current
-      const session = { ...current.session, ...patch }
-      writeSession(session)
-      return { ...current, session }
+      const registration = { ...current.registration, ...patch }
+      writeRegistration(current.profile.driver.id, registration)
+      return { ...current, registration }
     })
   }, [])
 
@@ -79,27 +70,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       async signIn(demoId) {
-        const result = await identityProvider.signIn(demoId)
+        const result = await api.signIn(demoId)
         if (result.ok) {
-          const previous = readSession()
-          const session = previous?.demoId === demoId.trim() ? previous : { demoId: demoId.trim() }
-          writeSession(session)
-          setState({ status: 'signedIn', profile: result.profile, session })
+          setState({
+            status: 'signedIn',
+            profile: result.profile,
+            registration: readRegistration(result.profile.driver.id),
+          })
         }
         return result
       },
       giveConsent(shareSummary) {
-        updateSession({ consent: { trips: true, shareSummary, at: new Date().toISOString() } })
+        updateRegistration({ consent: { trips: true, shareSummary, at: new Date().toISOString() } })
       },
       completeRegistration() {
-        updateSession({ registeredAt: new Date().toISOString() })
+        updateRegistration({ registeredAt: new Date().toISOString() })
       },
-      signOut() {
-        writeSession(null)
+      async signOut() {
+        await api.signOut()
+        setState({ status: 'signedOut' })
+      },
+      // After deleteMyData the API has already ended the session.
+      markSignedOut() {
         setState({ status: 'signedOut' })
       },
     }),
-    [state, updateSession],
+    [state, updateRegistration],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -112,8 +108,8 @@ export function useAuth() {
 }
 
 // Where a signed-in user should be, given how far registration got.
-export function nextStepPath(session: StoredSession): string {
-  if (!session.consent) return '/register/consent'
-  if (!session.registeredAt) return '/register/profile'
+export function nextStepPath(registration: Registration): string {
+  if (!registration.consent) return '/register/consent'
+  if (!registration.registeredAt) return '/register/profile'
   return '/app'
 }

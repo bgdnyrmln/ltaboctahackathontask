@@ -1,4 +1,4 @@
-import type { TripSummary } from '@trips'
+import type { TripSummary } from '@data'
 
 // One synthetic trip "just driven", for demos without a car or GPS. Labelled synthetic.
 export function simulateTrip(driverId: string, vehicleId: string | null, style: 'calm' | 'rushed'): TripSummary {
@@ -20,6 +20,7 @@ export function simulateTrip(driverId: string, vehicleId: string | null, style: 
     harshBrakeCount: style === 'calm' ? 0 : 3,
     harshAccelCount: style === 'calm' ? 0 : 2,
     nightKm: 0,
+    maxContinuousMin: Math.round(drivingSec / 60),
     coverage: 0.96,
     speedLimitSource: 'road_type_default',
     source: 'synthetic',

@@ -7,7 +7,7 @@ import './App.css'
 export function RegisterConsent() {
   const { state, giveConsent } = useAuth()
   const navigate = useNavigate()
-  const existing = state.status === 'signedIn' ? state.session.consent : undefined
+  const existing = state.status === 'signedIn' ? state.registration.consent : undefined
   const [fakeData, setFakeData] = useState(Boolean(existing))
   const [trips, setTrips] = useState(Boolean(existing))
   const [share, setShare] = useState(existing?.shareSummary ?? false)

@@ -11,7 +11,7 @@ export interface SqlDriver {
 
 export type SqlValue = string | number | null;
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const TRIP_SCHEMA = `
 CREATE TABLE IF NOT EXISTS trip_summary (
@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS trip_summary (
   harsh_brake_count  INTEGER NOT NULL CHECK (harsh_brake_count >= 0),
   harsh_accel_count  INTEGER NOT NULL CHECK (harsh_accel_count >= 0),
   night_km           REAL NOT NULL CHECK (night_km >= 0),
+  max_continuous_min REAL NOT NULL CHECK (max_continuous_min >= 0),
   coverage           REAL NOT NULL CHECK (coverage BETWEEN 0 AND 1),
   speed_limit_source TEXT NOT NULL,
   source             TEXT NOT NULL
@@ -50,6 +51,7 @@ interface TripRow {
   harsh_brake_count: number;
   harsh_accel_count: number;
   night_km: number;
+  max_continuous_min: number;
   coverage: number;
   speed_limit_source: TripSummary['speedLimitSource'];
   source: TripSummary['source'];
@@ -69,6 +71,7 @@ const fromRow = (r: TripRow): TripSummary => ({
   harshBrakeCount: r.harsh_brake_count,
   harshAccelCount: r.harsh_accel_count,
   nightKm: r.night_km,
+  maxContinuousMin: r.max_continuous_min,
   coverage: r.coverage,
   speedLimitSource: r.speed_limit_source,
   source: r.source,
@@ -88,6 +91,7 @@ const toParams = (t: TripSummary): SqlValue[] => [
   t.harshBrakeCount,
   t.harshAccelCount,
   t.nightKm,
+  t.maxContinuousMin,
   t.coverage,
   t.speedLimitSource,
   t.source,
@@ -96,8 +100,8 @@ const toParams = (t: TripSummary): SqlValue[] => [
 const UPSERT = `INSERT OR REPLACE INTO trip_summary (
   id, driver_id, vehicle_id, started_at, ended_at, distance_km, driving_sec,
   sec_over_limit, sec_over_10, sec_over_20, harsh_brake_count,
-  harsh_accel_count, night_km, coverage, speed_limit_source, source
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  harsh_accel_count, night_km, max_continuous_min, coverage, speed_limit_source, source
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 // Timestamps are compared as epoch ms so mixed ISO offsets order correctly.
 export async function createSqliteTripRepository(db: SqlDriver): Promise<TripRepository> {

@@ -70,6 +70,13 @@ export function validateTrip(trip: TripSummary): void {
     if (trip.nightKm > trip.distanceKm) problems.push('nightKm exceeds distanceKm');
   }
 
+  const cont = trip?.maxContinuousMin;
+  if (typeof cont !== 'number' || !Number.isFinite(cont) || cont < 0) {
+    problems.push('maxContinuousMin must be a non-negative number');
+  } else if (end >= start && cont * 60_000 > end - start + 60_000) {
+    problems.push('maxContinuousMin exceeds trip duration');
+  }
+
   if (
     typeof trip?.coverage !== 'number' ||
     !(trip.coverage >= 0 && trip.coverage <= 1)
@@ -97,11 +104,13 @@ export function sumTrips(trips: TripSummary[]): TripTotals {
     harshBrakeCount: 0,
     harshAccelCount: 0,
     nightKm: 0,
+    maxContinuousMin: 0,
     coverage: 0,
   };
   let weightedCoverage = 0;
   for (const t of trips) {
     for (const key of COUNTERS) totals[key] += t[key];
+    totals.maxContinuousMin = Math.max(totals.maxContinuousMin, t.maxContinuousMin);
     weightedCoverage += t.coverage * t.distanceKm;
   }
   totals.coverage = totals.distanceKm > 0 ? weightedCoverage / totals.distanceKm : 0;

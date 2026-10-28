@@ -37,6 +37,7 @@ function trip(overrides: Partial<TripSummary> = {}): TripSummary {
     harshBrakeCount: 2,
     harshAccelCount: 1,
     nightKm: 0,
+    maxContinuousMin: 15,
     coverage: 0.95,
     speedLimitSource: 'road_type_default',
     source: 'synthetic',
@@ -135,6 +136,11 @@ describe('validateTrip', () => {
       assert.ok(err instanceof TripValidationError);
       assert.equal(err.problems.length, 5);
     }
+  });
+
+  test('rejects a continuous stretch longer than the trip', () => {
+    assert.throws(() => validateTrip(trip({ maxContinuousMin: 45 })), TripValidationError);
+    assert.throws(() => validateTrip(trip({ maxContinuousMin: -1 })), TripValidationError);
   });
 
   test('rejects inconsistent speeding bands', () => {

@@ -1,17 +1,19 @@
 import { isUnknown } from '@data'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileDetails } from '../../components/ProfileDetails'
 import { useDriverData } from '../../demo/useDriverData'
 
 export function ProfileTab() {
-  const { state, signOut } = useAuth()
-  const { trips, deleteMyData, restoreSampleData } = useDriverData()
+  const { state, signOut, markSignedOut } = useAuth()
+  const { trips, deleteMyData } = useDriverData()
+  const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   if (state.status !== 'signedIn') return null
 
   const { driver, vehicles } = state.profile
-  const consent = state.session.consent
+  const consent = state.registration.consent
   const licenceYears = isUnknown(driver.licenseSince)
     ? null
     : new Date().getFullYear() - new Date(driver.licenseSince).getFullYear()
@@ -51,7 +53,7 @@ export function ProfileTab() {
       <section className="panel">
         <h2 className="panel__title">Privacy</h2>
         <p className="muted">
-          {trips.length} trip summaries stored on this device. Weekly summary sharing:{' '}
+          {trips.length} recent trip summaries stored on this device. Weekly summary sharing:{' '}
           {consent?.shareSummary ? 'on (simulated)' : 'off'}.
         </p>
         {!confirming ? (
@@ -60,14 +62,15 @@ export function ProfileTab() {
           </button>
         ) : (
           <div className="confirm">
-            <p>Delete all {trips.length} trips on this device? This cannot be undone.</p>
+            <p>Delete all your trips on this device and sign out? This cannot be undone.</p>
             <div className="btn-row">
               <button
                 type="button"
                 className="btn btn--primary"
                 onClick={async () => {
                   await deleteMyData()
-                  setConfirming(false)
+                  markSignedOut()
+                  navigate('/login', { replace: true })
                 }}
               >
                 Delete
@@ -77,11 +80,6 @@ export function ProfileTab() {
               </button>
             </div>
           </div>
-        )}
-        {trips.length === 0 && (
-          <button type="button" className="link-btn" onClick={restoreSampleData}>
-            Restore sample trips for the demo
-          </button>
         )}
       </section>
 

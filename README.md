@@ -1,13 +1,13 @@
 # OCTA telematics workbench
 
-Hackathon prototype concept: a mobile experience that uses driving telemetry to explain a driver risk score, give one actionable safety tip, and show an illustrative OCTA price recommendation.
+Hackathon prototype concept: a mobile experience that uses driving telemetry to explain a driver risk score, and give one actionable safety tip. An illustrative price or risk-band recommendation is optional.
 
 ## Challenge constraints
 
 - Prioritize safer driving, fewer crashes and lower crash impact; any premium effect is a prototype recommendation, not a real insurer quote.
 - Present 3–5 KPIs. Normalize events by exposure (for example per 100 km or per driving hour) and account for road type, speed limit, time, weather, and data quality where available.
 - Keep only indicators that have a plausible link to crash risk, can be compared fairly, and can guide a driver action.
-- Show the score, explain which behaviors affect it, and provide specific advice. The demo should reach a decision: advice and an illustrative price/risk recommendation.
+- Show the score, explain which behaviors affect it, and provide specific advice. The demo should reach a decision: an actionable safety tip based on the score. A price or risk-band recommendation is optional; if shown, it must be labeled as a simulation.
 - Favor low setup effort and low battery/resource use. Consider GDPR and EU-hosted data.
 
 Workshop numbers in the supplied slides are illustrative and are not Balcia pricing rules. We have not selected final KPIs, score weights, price mapping, platform, or whether sensor data will be simulated or collected from a phone. Agree those before implementation.
