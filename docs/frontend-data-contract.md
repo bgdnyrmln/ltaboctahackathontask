@@ -14,12 +14,16 @@ Audience: Agent B (frontend) and Agent D (scoring). Covers the HACK-15 mock data
 | `driver.displayName` | string | free text | `Demo Driver Anna` | safe to show |
 | `driver.licenseCategories` | string[] or unknown | EU categories (`B`, `C`, ...) | `["B"]` | safe to show; **not a score input** until HACK-1 decides |
 | `driver.licenseSince` | `YYYY-MM-DD` or unknown | date | `2016-05-01` | safe to show; driving experience as a risk factor is only a proposal (HACK-14), needs HACK-1 |
+| `driver.claimsLast5y` | integer 0-50, unknown or absent | count | `0` | profile factor for D's `profileRisk` (at-fault incidents in 5 years); never part of the behaviour score |
+| `driver.penaltyPoints` | integer 0-50, unknown or absent | points | `4` | profile factor for D; never part of the behaviour score |
+| `driver.birthYear` | integer, unknown or absent | year | `1991` | year only (data minimisation); D keeps age off by default; do not show unless asked |
 | `driver.synthetic` | `true` | flag | `true` | show a "Demo data" badge |
 | `vehicle.id` | string | stable id | `veh-001` | internal |
 | `vehicle.ownerDriverId` | string | driver id | `drv-001` | internal |
 | `vehicle.plateLabel` | string | always `DEMO-nnn` | `DEMO-101` | safe to show |
 | `vehicle.make`, `vehicle.model` | string or unknown | text | `Skoda`, `Octavia` | safe to show |
 | `vehicle.year` | integer or unknown | year | `2019` | safe to show; not a score input yet |
+| `vehicle.inspectionValidUntil` | `YYYY-MM-DD`, unknown or absent | date | `2027-04-30` | profile factor; use `isInspectionOverdue(vehicle, now)` (true, false or null when unknown) |
 | `vehicle.synthetic` | `true` | flag | `true` | demo badge |
 
 Unknown is always the object `{ "kind": "unknown" }`. Use `isUnknown(value)` and render a placeholder such as "Not available". Never render it as `0`, an empty string or a guessed value.
@@ -35,15 +39,22 @@ Success:
   "ok": true,
   "demo": true,
   "profile": {
-    "driver": { "id": "drv-001", "displayName": "Demo Driver Anna", "licenseCategories": ["B"], "licenseSince": "2016-05-01", "synthetic": true },
+    "driver": { "id": "drv-001", "displayName": "Demo Driver Anna", "licenseCategories": ["B"], "licenseSince": "2016-05-01", "claimsLast5y": 0, "penaltyPoints": 0, "birthYear": 1991, "synthetic": true },
     "vehicles": [
-      { "id": "veh-001", "ownerDriverId": "drv-001", "plateLabel": "DEMO-101", "make": "Skoda", "model": "Octavia", "year": 2019, "synthetic": true }
+      { "id": "veh-001", "ownerDriverId": "drv-001", "plateLabel": "DEMO-101", "make": "Skoda", "model": "Octavia", "year": 2019, "inspectionValidUntil": "2027-04-30", "synthetic": true }
     ]
   }
 }
 ```
 
-Driver with missing data (`DEMO-SID-003`): same shape, with `{ "kind": "unknown" }` in `licenseCategories`, `licenseSince`, `make`, `model` and `year`.
+Driver with missing data (`DEMO-SID-003`): same shape, with `{ "kind": "unknown" }` in `licenseCategories`, `licenseSince`, `claimsLast5y`, `penaltyPoints`, `birthYear`, `make`, `model`, `year` and `inspectionValidUntil`.
+
+Demo profile cases for D's profile coefficient (on 2026-10-28):
+- Anna: licence since 2016, 0 incidents, 0 points, inspection valid until 2027-04-30.
+- Janis: licence since 2025-03-10 (under 2 years), 1 incident, 4 penalty points, inspection overdue (2026-09-30).
+- Marta: all of these unknown.
+
+The static profile fields are optional in the TypeScript types; an absent field means unknown, the same as `{ "kind": "unknown" }`. Read them with `known(value)` (value or `null`).
 
 Errors:
 

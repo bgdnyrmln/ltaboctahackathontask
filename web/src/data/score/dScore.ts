@@ -1,15 +1,16 @@
 // Agent D scoring. Drop-in ScoreFn (see types.ts) that keeps the interim KPIs,
 // weights and thresholds from docs/driver-score-spec-draft.md and adds what the
-// trip aggregates already allow: severity-weighted speeding, a cap for extreme
+// trip aggregates already allow: speeding weighted by how far above the limit (relative), a cap for extreme
 // speeding, input validation, and lower confidence without map speed limits.
 // All numbers are preliminary and illustrative (HACK-1 not approved).
 import type { TripSummary, TripTotals } from '../trips/types.ts';
 import { KPI_DEFS, bandOf, confidenceOf } from './interimScore.ts';
 import type { Confidence, KpiResult, ScoreFn } from './types.ts';
 
-// secOverLimit is already beyond the tolerance, secOver10 and secOver20 are nested in it.
-export const SPEED_BAND_WEIGHTS = { upTo10: 0.5, from10to20: 1, over20: 2 } as const;
-export const PEAK_SHARE = 0.05; // share of driving time more than 20 km/h over the limit
+// Relative bands (share of the limit), nested: overLimit >= pct10 >= pct20 >= pct40.
+// +20 km/h in a 30 zone is far more severe than +20 km/h on a 110 road.
+export const SPEED_BAND_WEIGHTS = { upTo10: 0.5, from10to20: 1, from20to40: 2, over40: 4 } as const;
+export const PEAK_SHARE = 0.02; // share of driving time more than 40% over the limit
 export const PEAK_CAP = 60;
 export const MAP_LIMIT_SHARE_MIN = 0.5; // km share with a map speed limit
 const SPEEDING_PRIOR = 5; // typical severity-weighted share, % of driving time
@@ -21,12 +22,15 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 export function isValidTotals(t: TripTotals): boolean {
   const nums = [
     t.distanceKm, t.drivingSec, t.secOverLimit, t.secOver10, t.secOver20,
-    t.harshBrakeCount, t.harshAccelCount,
+    t.secOverPct10, t.secOverPct20, t.secOverPct40, t.harshBrakeCount, t.harshAccelCount,
   ];
   return (
     nums.every((n) => Number.isFinite(n) && n >= 0) &&
     t.secOver20 <= t.secOver10 &&
     t.secOver10 <= t.secOverLimit &&
+    t.secOverPct40 <= t.secOverPct20 &&
+    t.secOverPct20 <= t.secOverPct10 &&
+    t.secOverPct10 <= t.secOverLimit &&
     t.secOverLimit <= t.drivingSec &&
     Number.isFinite(t.coverage) && t.coverage >= 0 && t.coverage <= 1
   );
@@ -35,9 +39,10 @@ export function isValidTotals(t: TripTotals): boolean {
 // Seconds above the limit, weighted by how far above.
 export function severitySeconds(t: TripTotals): number {
   return (
-    SPEED_BAND_WEIGHTS.upTo10 * (t.secOverLimit - t.secOver10) +
-    SPEED_BAND_WEIGHTS.from10to20 * (t.secOver10 - t.secOver20) +
-    SPEED_BAND_WEIGHTS.over20 * t.secOver20
+    SPEED_BAND_WEIGHTS.upTo10 * (t.secOverLimit - t.secOverPct10) +
+    SPEED_BAND_WEIGHTS.from10to20 * (t.secOverPct10 - t.secOverPct20) +
+    SPEED_BAND_WEIGHTS.from20to40 * (t.secOverPct20 - t.secOverPct40) +
+    SPEED_BAND_WEIGHTS.over40 * t.secOverPct40
   );
 }
 
@@ -95,7 +100,7 @@ export function createDScore(smoothing = 1): ScoreFn {
     const usable = valid && confidence !== 'insufficient' && kpis.every((k) => k.subscore !== null);
     let score = usable ? Math.round(kpis.reduce((s, k) => s + k.weight * (k.subscore ?? 0), 0)) : null;
     // Short extreme speeding must not hide behind good braking and acceleration.
-    if (score !== null && totals.drivingSec > 0 && totals.secOver20 / totals.drivingSec >= PEAK_SHARE) {
+    if (score !== null && totals.drivingSec > 0 && totals.secOverPct40 / totals.drivingSec >= PEAK_SHARE) {
       score = Math.min(score, PEAK_CAP);
     }
     return { score, confidence, band: score === null ? null : bandOf(score), kpis };

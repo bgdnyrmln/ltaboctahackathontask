@@ -58,6 +58,23 @@ export function validateRegistry(
         add('driver', id, 'licenseSince is in the future');
       }
     }
+
+    for (const key of ['claimsLast5y', 'penaltyPoints'] as const) {
+      const v = d?.[key];
+      if (v !== undefined && !isUnknown(v) && !(Number.isInteger(v) && v >= 0 && v <= 50)) {
+        add('driver', id, `${key} must be an integer 0-50 or unknown`);
+      }
+    }
+
+    const birth = d?.birthYear;
+    if (birth !== undefined && !isUnknown(birth)) {
+      const maxBirth = now.getUTCFullYear() - 16;
+      if (!Number.isInteger(birth) || birth < 1900 || birth > maxBirth) {
+        add('driver', id, `birthYear must be an integer 1900-${maxBirth} or unknown`);
+      } else if (typeof since === 'string' && ISO_DATE.test(since) && Number(since.slice(0, 4)) < birth + 15) {
+        add('driver', id, 'licenseSince is before the driver could hold a licence');
+      }
+    }
   }
 
   const vehicleIds = new Set<string>();
@@ -91,6 +108,12 @@ export function validateRegistry(
       const maxYear = now.getUTCFullYear() + 1;
       if (typeof year !== 'number' || !Number.isInteger(year) || year < 1950 || year > maxYear) {
         add('vehicle', id, `year must be an integer 1950-${maxYear} or unknown`);
+      }
+    }
+    const inspection = v?.inspectionValidUntil;
+    if (inspection !== undefined && !isUnknown(inspection)) {
+      if (typeof inspection !== 'string' || !ISO_DATE.test(inspection) || Number.isNaN(Date.parse(inspection))) {
+        add('vehicle', id, 'inspectionValidUntil must be YYYY-MM-DD or unknown');
       }
     }
     if (v?.synthetic !== true) add('vehicle', id, 'synthetic must be true');
