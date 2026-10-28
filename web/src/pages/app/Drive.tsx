@@ -9,7 +9,7 @@ import { useDriverData } from '../../demo/useDriverData'
 import { breakLimitLabel, breakStatus, fmtDuration } from '../../telemetry/breaks'
 import { obdConnectedDevice, rpmFor } from '../../telemetry/obdLink'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
-import { SIMULATION_SPEEDS, type SimulationSpeed } from '../../telemetry/simulatedDrive'
+import { DEFAULT_SIMULATION_SPEED, SIMULATION_SPEEDS, type SimulationSpeed } from '../../telemetry/simulatedDrive'
 import { MIN_TRIP } from '../../telemetry/tripRecorder'
 import { useTripRecording } from '../../telemetry/useTripRecording'
 import { useT } from '../../i18n'
@@ -39,7 +39,7 @@ export function Drive() {
   const { addTrip } = useDriverData()
   const { status, stats, error, routeDone, start, stop, markPhone } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
-  const [simSpeed, setSimSpeed] = useState<SimulationSpeed>(1)
+  const [simSpeed, setSimSpeed] = useState<SimulationSpeed>(DEFAULT_SIMULATION_SPEED)
   const isDesktop = useIsDesktop()
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null

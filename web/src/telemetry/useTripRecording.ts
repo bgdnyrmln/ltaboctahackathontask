@@ -2,7 +2,16 @@ import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { postLiveTrip } from './liveChannel'
 import { canRecordTrips, isPhoneSimulator } from './platform'
-import { PLACES, pickRandomSimTrip, simTrip, startSimulatedDrive, type SimTripId, type SimulationSpeed } from './simulatedDrive'
+import {
+  DEFAULT_SIMULATION_SPEED,
+  PLACES,
+  pickRandomSimTrip,
+  runLengthSec,
+  simTrip,
+  startSimulatedDrive,
+  type SimTripId,
+  type SimulationSpeed,
+} from './simulatedDrive'
 import { obdConnectedDevice } from './obdLink'
 import { rememberSimTrip } from './tripAnalysis'
 import { TripRecorder, type GpsFix, type LiveStats } from './tripRecorder'
@@ -67,7 +76,7 @@ export function useTripRecording() {
 
   useEffect(() => cleanup, [cleanup])
 
-  const start = useCallback(async (speed: SimulationSpeed = 1) => {
+  const start = useCallback(async (speed: SimulationSpeed = DEFAULT_SIMULATION_SPEED) => {
     // Trips start only on a phone (native app or the site's phone simulator), never on desktop.
     if (!canRecordTrips()) {
       setStatus('unsupported')
@@ -80,7 +89,14 @@ export function useTripRecording() {
       const tripId = pickRandomSimTrip()
       simTripId.current = tripId
       const trip = simTrip(tripId)
-      postLiveTrip({ type: 'start', at: Date.now(), from: PLACES[trip.from].name, to: PLACES[trip.to].name })
+      postLiveTrip({
+        type: 'start',
+        at: Date.now(),
+        from: PLACES[trip.from].name,
+        to: PLACES[trip.to].name,
+        speed,
+        durationSec: runLengthSec(tripId),
+      })
       setError(null)
       // With the (simulated) OBD-II adapter connected, trips are labelled as OBD data.
       recorder.current = new TripRecorder(obdConnectedDevice() ? 'obd_mock' : 'synthetic')
