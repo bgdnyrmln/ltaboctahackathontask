@@ -1,4 +1,4 @@
-import { OBD_DEMO_LABEL } from '@data'
+import { OBD_DEMO_LABEL, SPEED_MAP_DEMO_LABEL } from '@data'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
@@ -60,7 +60,10 @@ export function Drive() {
             {Math.round(stats?.speedKmh ?? 0)}
             <small>km/h</small>
           </p>
-          <p className="muted">Assumed limit {stats?.limitKmh ?? 50} km/h</p>
+          <p className="muted">
+            Limit {stats?.limitKmh ?? 50} km/h ·{' '}
+            {stats?.limitSource === 'map' ? `${stats.limitName ?? 'map'} (map)` : 'default for road type'}
+          </p>
           <dl className="live__grid">
             <div>
               <dt>Time</dt>
@@ -105,7 +108,9 @@ export function Drive() {
           </p>
           <ul className="checklist">
             <li>Only trip totals are saved. Your route is never stored.</li>
-            <li>Speed limits are approximate (city 50, out of town 90).</li>
+            <li>
+              Speed limits come from a demo map of Riga, otherwise city 50 / out of town 90. {SPEED_MAP_DEMO_LABEL}.
+            </li>
           </ul>
           {status === 'denied' && (
             <p className="form-error" role="alert">

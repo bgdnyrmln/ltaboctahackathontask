@@ -1,7 +1,7 @@
 // Collects live phone GPS speed samples and turns them into one TripSummary with
 // Agent C's shared aggregator (same rules as the OBD path). Positions are used only
 // to derive speed when the device reports none; they are never stored.
-import { aggregateTrip, type SpeedSample, type TripSummary } from '@data'
+import { aggregateTrip, getSpeedLimitMap, type SpeedSample, type TripSummary } from '@data'
 
 export type GpsFix = {
   t: number // epoch ms
@@ -16,6 +16,8 @@ export type LiveStats = {
   distanceKm: number
   speedKmh: number
   limitKmh: number
+  limitSource: 'map' | 'road_type_default'
+  limitName: string | null
   overLimit: boolean
   harshBrakes: number
   harshAccels: number
@@ -27,12 +29,14 @@ export type LiveStats = {
 const MAX_ACCURACY_M = 30
 const MAX_PLAUSIBLE_KMH = 216
 const TOLERANCE_KMH = 3
-// Road-type default limit: urban 50 unless sustained >70 km/h for a minute, then 90.
+// Road-type default limit when the map has no coverage: urban 50 unless sustained
+// >70 km/h for a minute, then 90.
 const URBAN_LIMIT = 50
 const RURAL_LIMIT = 90
 const RURAL_AFTER_MS = 60_000
 const MIN_TRIP_KM = 1
 const MIN_TRIP_SEC = 180
+const MAP_SHARE_FOR_SOURCE = 0.5 // trip is labelled 'map' when most samples had a map limit
 
 function haversineKm(a: GpsFix, b: GpsFix) {
   const toRad = (d: number) => (d * Math.PI) / 180
@@ -47,6 +51,11 @@ export class TripRecorder {
   private limits = new Map<number, number>()
   private lastFix: GpsFix | null = null
   private limit = URBAN_LIMIT
+  private defaultLimit = URBAN_LIMIT
+  private limitSource: LiveStats['limitSource'] = 'road_type_default'
+  private limitName: string | null = null
+  private mapHits = 0
+  private speedSamples = 0
   private fastSince: number | null = null
   private speedKmh = 0
   private accuracy: number | null = null
@@ -70,13 +79,20 @@ export class TripRecorder {
       return
     }
 
+    // Road-type default, used when the speed limit map has no coverage here.
     if (kmh > 70) {
       this.fastSince ??= fix.t
-      if (fix.t - this.fastSince >= RURAL_AFTER_MS) this.limit = RURAL_LIMIT
+      if (fix.t - this.fastSince >= RURAL_AFTER_MS) this.defaultLimit = RURAL_LIMIT
     } else {
       this.fastSince = null
-      if (kmh < 55) this.limit = URBAN_LIMIT
+      if (kmh < 55) this.defaultLimit = URBAN_LIMIT
     }
+    const hit = getSpeedLimitMap().lookup(fix.lat, fix.lon)
+    this.speedSamples++
+    if (hit) this.mapHits++
+    this.limit = hit?.limitKmh ?? this.defaultLimit
+    this.limitSource = hit ? 'map' : 'road_type_default'
+    this.limitName = hit?.name ?? null
     this.speedKmh = kmh
     this.limits.set(fix.t, this.limit)
     this.samples.push({ t: fix.t, speedKmh: kmh })
@@ -90,7 +106,8 @@ export class TripRecorder {
       vehicleId,
       samples: this.samples,
       limitKmh: (t) => this.limits.get(t) ?? URBAN_LIMIT,
-      speedLimitSource: 'road_type_default',
+      speedLimitSource:
+        this.speedSamples > 0 && this.mapHits / this.speedSamples >= MAP_SHARE_FOR_SOURCE ? 'map' : 'road_type_default',
       source: 'phone',
       expectedHz: 1,
     })
@@ -103,6 +120,8 @@ export class TripRecorder {
       distanceKm: summary?.distanceKm ?? 0,
       speedKmh: this.speedKmh,
       limitKmh: this.limit,
+      limitSource: this.limitSource,
+      limitName: this.limitName,
       overLimit: this.speedKmh - this.limit > TOLERANCE_KMH,
       harshBrakes: summary?.harshBrakeCount ?? 0,
       harshAccels: summary?.harshAccelCount ?? 0,
