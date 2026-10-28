@@ -1,7 +1,14 @@
 // Collects live phone GPS speed samples and turns them into one TripSummary with
 // Agent C's shared aggregator (same rules as the OBD path). Positions are used only
 // to derive speed when the device reports none; they are never stored.
-import { aggregateTrip, getSpeedLimitMap, PHONE_WINDOW_MS, speedingBands, type SpeedSample, type TripSummary } from '@data'
+import {
+  aggregateTrip,
+  getSpeedLimitMap,
+  PHONE_WINDOW_MS,
+  speedingBands,
+  type SpeedSample,
+  type TripSummary,
+} from '@data'
 
 export type GpsFix = {
   t: number // epoch ms
@@ -19,6 +26,8 @@ export type LiveStats = {
   limitSource: 'map' | 'road_type_default'
   limitName: string | null
   overLimit: boolean
+  tooSlow: boolean // moving at under half the limit for a sustained stretch
+  secTooSlow: number
   harshBrakes: number
   harshAccels: number
   accuracy: number | null
@@ -36,6 +45,9 @@ const RURAL_LIMIT = 90
 const RURAL_AFTER_MS = 60_000
 const MIN_TRIP_KM = 1
 const MIN_TRIP_SEC = 180
+// Driving far below the limit also raises risk (holding up traffic, risky overtakes).
+const TOO_SLOW_SHARE = 0.5 // under half the limit...
+const TOO_SLOW_AFTER_MS = 8000 // ...for at least this long, so normal starts and stops do not count
 const MAP_SHARE_FOR_SOURCE = 0.5 // trip is labelled 'map' when most samples had a map limit
 
 function haversineKm(a: GpsFix, b: GpsFix) {
@@ -56,6 +68,10 @@ export class TripRecorder {
   private limitName: string | null = null
   private mapHits = 0
   private speedSamples = 0
+  private slowSince: number | null = null
+  private tooSlow = false
+  private secTooSlow = 0
+  private lastT: number | null = null
   private fastSince: number | null = null
   private speedKmh = 0
   private accuracy: number | null = null
@@ -101,6 +117,12 @@ export class TripRecorder {
     this.limitSource = hit ? 'map' : 'road_type_default'
     this.limitName = hit?.name ?? null
     this.speedKmh = kmh
+    const slow = kmh >= 5 && kmh < this.limit * TOO_SLOW_SHARE
+    this.slowSince = slow ? (this.slowSince ?? fix.t) : null
+    const wasSlow = this.tooSlow
+    this.tooSlow = this.slowSince !== null && fix.t - this.slowSince >= TOO_SLOW_AFTER_MS
+    if (this.tooSlow && wasSlow && this.lastT !== null) this.secTooSlow += (fix.t - this.lastT) / 1000
+    this.lastT = fix.t
     this.limits.set(fix.t, this.limit)
     this.samples.push({ t: fix.t, speedKmh: kmh })
   }
@@ -149,6 +171,8 @@ export class TripRecorder {
       limitSource: this.limitSource,
       limitName: this.limitName,
       overLimit: speedingBands(this.speedKmh, this.limit).overLimit,
+      tooSlow: this.tooSlow,
+      secTooSlow: Math.round(this.secTooSlow),
       harshBrakes: summary?.harshBrakeCount ?? 0,
       harshAccels: summary?.harshAccelCount ?? 0,
       accuracy: this.accuracy,

@@ -14,6 +14,12 @@ import { PLACES, ROUTE } from '../telemetry/simulatedDrive'
 
 const OK_COLOR = '#2e9e3a'
 const OVER_COLOR = '#ff4512'
+const SLOW_COLOR = '#2f80ed'
+
+type SpeedState = 'ok' | 'over' | 'slow'
+const stateOf = (m: { overLimit: boolean; tooSlow: boolean }): SpeedState =>
+  m.overLimit ? 'over' : m.tooSlow ? 'slow' : 'ok'
+const COLORS: Record<SpeedState, string> = { ok: OK_COLOR, over: OVER_COLOR, slow: SLOW_COLOR }
 const SIGN_AFTER_FIXES = 30
 const FOLLOW_ZOOM = 16
 const MIN_HEADING_M = 3 // ignore heading changes from tiny moves
@@ -55,7 +61,7 @@ function bearingOf(a: L.LatLng, b: L.LatLng): number {
 // Shortest signed turn from a to b, in degrees (-180..180).
 const turn = (a: number, b: number) => ((b - a + 540) % 360) - 180
 
-type Run = { line: L.Polyline; pts: L.LatLng[]; over: boolean }
+type Run = { line: L.Polyline; pts: L.LatLng[]; state: SpeedState }
 type Motion = { from: L.LatLng; to: L.LatLng; start: number; dur: number; lastArrival: number }
 
 export function LiveTripMap() {
@@ -75,12 +81,13 @@ export function LiveTripMap() {
   const navigating = useRef(false)
   const lastLimit = useRef<number | null>(null)
   const pendingLimit = useRef<{ limit: number; at: L.LatLng; count: number } | null>(null)
-  const counts = useRef({ fixes: 0, over: 0 })
+  const counts = useRef({ fixes: 0, over: 0, slow: 0 })
 
   const [status, setStatus] = useState<'idle' | 'live' | 'done'>('idle')
   const [live, setLive] = useState<Live | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
   const [overShare, setOverShare] = useState(0)
+  const [slowShare, setSlowShare] = useState(0)
   const [destination, setDestination] = useState<string | null>(null)
 
   const fitRoute = (animate: boolean) => {
@@ -210,7 +217,7 @@ export function LiveTripMap() {
           motion.current = null
           lastLimit.current = null
           pendingLimit.current = null
-          counts.current = { fixes: 0, over: 0 }
+          counts.current = { fixes: 0, over: 0, slow: 0 }
           navigating.current = true
           m.dragging.disable()
           m.doubleClickZoom.disable()
@@ -218,6 +225,7 @@ export function LiveTripMap() {
           setLive(null)
           setSummary(null)
           setOverShare(0)
+          setSlowShare(0)
           setDestination(msg.to ?? null)
           return
         }
@@ -255,15 +263,15 @@ export function LiveTripMap() {
           // Trail: one polyline per colour run; the last point follows the car.
           const lastFix = prev?.to ?? at
           const r = run.current
-          if (r && r.over === msg.overLimit) {
+          if (r && r.state === stateOf(msg)) {
             r.pts.push(lastFix)
           } else {
             if (r) r.line.setLatLngs([...r.pts, lastFix])
             run.current = {
-              over: msg.overLimit,
+              state: stateOf(msg),
               pts: [lastFix],
               line: L.polyline([lastFix], {
-                color: msg.overLimit ? OVER_COLOR : OK_COLOR,
+                color: COLORS[stateOf(msg)],
                 weight: 7,
                 opacity: 0.95,
                 lineCap: 'round',
@@ -295,9 +303,11 @@ export function LiveTripMap() {
 
           counts.current.fixes++
           if (msg.overLimit) counts.current.over++
+          if (msg.tooSlow) counts.current.slow++
           setStatus('live')
           setLive(msg)
           setOverShare(Math.round((counts.current.over / counts.current.fixes) * 100))
+          setSlowShare(Math.round((counts.current.slow / counts.current.fixes) * 100))
           return
         }
 
@@ -352,7 +362,7 @@ export function LiveTripMap() {
         )}
 
         {live && status === 'live' && (
-          <div className={`ltm__readout${live.overLimit ? ' is-over' : ''}`}>
+          <div className={`ltm__readout${live.overLimit ? ' is-over' : live.tooSlow ? ' is-slow' : ''}`}>
             {destination && <p className="ltm__dest">To {destination}</p>}
             <p className="ltm__speed">
               {Math.round(live.kmh)}
@@ -361,6 +371,7 @@ export function LiveTripMap() {
             <p className="ltm__limit">
               Limit {live.limitKmh} · {live.limitName ?? 'road-type default'}
             </p>
+            {live.tooSlow && <p className="ltm__warn">Well below the limit</p>}
             <p className="ltm__limit">
               {live.distanceKm.toFixed(2)} km · over the limit {overShare}%
             </p>
@@ -377,8 +388,8 @@ export function LiveTripMap() {
                 : 'Trip too short, not saved'}
             </p>
             <p>
-              {summary.distanceKm.toFixed(1)} km · over the limit {overShare}% of the time · {summary.harshBrakes} harsh
-              braking · {summary.harshAccels} harsh acceleration
+              {summary.distanceKm.toFixed(1)} km · over the limit {overShare}% · far below it {slowShare}% ·{' '}
+              {summary.harshBrakes} harsh braking · {summary.harshAccels} harsh acceleration
             </p>
             {summary.saved && (
               <Link to="/app" className="btn btn--primary">
@@ -400,6 +411,7 @@ export function LiveTripMap() {
       <div className="ltm__legend">
         <span className="ltm-key ltm-key--ok">Within limit</span>
         <span className="ltm-key ltm-key--over">Over limit</span>
+        <span className="ltm-key ltm-key--slow">Far below limit</span>
         <span className="ltm-key ltm-key--brake">Harsh braking</span>
         <span className="ltm-key ltm-key--accel">Harsh acceleration</span>
         <span className="ltm__note">{SPEED_MAP_DEMO_LABEL}. Positions are shown live only, never stored.</span>

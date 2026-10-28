@@ -69,7 +69,7 @@ export function Drive() {
                   ? `Simulated drive · ${SIMULATION_SPEEDUP}× speed`
                   : 'Recording'}
           </p>
-          <p className={`live__speed${stats?.overLimit ? ' is-over' : ''}`}>
+          <p className={`live__speed${stats?.overLimit ? ' is-over' : stats?.tooSlow ? ' is-slow' : ''}`}>
             {Math.round(stats?.speedKmh ?? 0)}
             <small>km/h</small>
           </p>

@@ -284,9 +284,9 @@ export const SIM_TRIPS: Array<{
       ['hold', 26, 165], // Old Riga 30 zone
       ['ramp', 26, 46, 15],
       ['hold', 46, 150],
-      ['ramp', 46, 20, 15], // gentle slow-down
-      ['hold', 20, 10],
-      ['ramp', 20, 46, 15],
+      ['ramp', 46, 38, 15], // gentle slow-down, still a sensible speed
+      ['hold', 38, 10],
+      ['ramp', 38, 46, 15],
       ['hold', 46, 150],
       ['ramp', 46, 0, 15],
     ],
@@ -294,7 +294,7 @@ export const SIM_TRIPS: Array<{
   {
     id: 'evening',
     label: 'Evening return',
-    note: 'Back into Old Riga: moderate speeding on the way, one harsh braking, calm in the old town.',
+    note: 'Back into Old Riga: moderate speeding, one harsh braking, a crawl far below the limit, calm in the old town.',
     reverse: true,
     from: 'akropole',
     to: 'oldRiga',
@@ -306,7 +306,11 @@ export const SIM_TRIPS: Array<{
       ['ramp', 64, 30, 3], // harsh braking, about -3.1 m/s²
       ['hold', 40, 30],
       ['ramp', 40, 50, 10],
-      ['hold', 49, 70],
+      ['hold', 49, 40],
+      ['ramp', 49, 21, 8],
+      ['hold', 21, 30], // crawling at ~20 on a 50 road: far below the limit
+      ['ramp', 21, 49, 8],
+      ['hold', 49, 78], // slow down only when reaching Old Riga
       ['ramp', 49, 30, 10],
       ['hold', 29, 120], // Old Riga 30 zone, within
       ['ramp', 29, 0, 10],

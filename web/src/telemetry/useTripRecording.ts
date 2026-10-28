@@ -40,6 +40,7 @@ export function useTripRecording() {
       limitKmh: s.limitKmh,
       limitName: s.limitName,
       overLimit: s.overLimit,
+      tooSlow: s.tooSlow,
       distanceKm: s.distanceKm,
       elapsedSec: s.elapsedSec,
     })
@@ -143,6 +144,7 @@ export function useTripRecording() {
         distanceKm: trip?.distanceKm ?? last?.distanceKm ?? 0,
         harshBrakes: trip?.harshBrakeCount ?? last?.harshBrakes ?? 0,
         harshAccels: trip?.harshAccelCount ?? last?.harshAccels ?? 0,
+        secTooSlow: last?.secTooSlow ?? 0,
       })
       recorder.current = null
       setStatus('idle')

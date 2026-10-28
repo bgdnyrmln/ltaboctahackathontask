@@ -1535,3 +1535,24 @@
   font-size: 10px;
   color: var(--color-text-muted);
 }
+
+/* Far below the limit */
+.ltm-key--slow::before {
+  background: #2f80ed;
+}
+
+.ltm__readout.is-slow {
+  border-left-color: #2f80ed;
+}
+
+.ltm__readout.is-slow .ltm__speed,
+.live__speed.is-slow {
+  color: #2f80ed;
+}
+
+.ltm__warn {
+  margin-top: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #2f80ed;
+}
