@@ -69,11 +69,24 @@ Static data for the algorithm is available synchronously from `@data` or `@trips
 - **SQLite:** `SPEED_LIMIT_SCHEMA`, `saveSpeedLimitFeatures`, `loadSpeedLimitFeatures(db, bbox?)` and `loadSpeedLimitMap` store the same data in the `speed_limit_feature` table. A future OpenStreetMap `maxspeed` import (ODbL) can use this table too.
 - **Trip summary:** if a trip used map limits, set `speedLimitSource: 'map'`.
 
+### Trip maps (opt-in routes)
+
+Implements C's part of `docs/trip-route-store-proposal.md`. The score never reads routes.
+
+- **Consent:** `getRouteConsent()` and `setRouteConsent(on)`. Turning it off deletes the driver's routes. Without consent, `saveTripRoute` throws `RouteConsentError`.
+- **Saving:** in `TripRecorder.finish()`, call `buildTripRoute({ trip, fixes })`, where each fix is `{ t, lat, lon, speedKmh, limitKmh }`. Save the trip first, then call `saveTripRoute(route)`. `buildTripRoute` returns `null` when the trip is too short to keep after the privacy trim.
+- **Reading:** `getTripRoute(tripId)` returns `null` if the route is missing, expired or belongs to another driver. `routeView(route, trip.startedAt)` returns `{ points, events }` in the shapes `TripReplayMap` already takes. `listRouteTripIds()` tells which trips have a route.
+- **Deleting:** `deleteTripRoute(tripId)`. `deleteMyData()` also removes routes and returns `routesDeleted`.
+- **Minimisation:** the first and last 200 m are trimmed, geometry is simplified with a 5 m tolerance (state changes are kept exactly), routes expire after 30 days, and expired routes are purged on first access. No raw fixes, accuracy values or device ids are stored.
+- **Storage:** IndexedDB (`octa` / `tripRoutes`) in the browser, `createSqliteRouteRepository` (`trip_route` table) for native, and memory in tests.
+- **Harsh events:** `harshEvents(samples)` gives event timestamps and peaks under the same rule `aggregateTrip` counts by.
+- **Defaults for the open questions (A can change them):** 30 days, a fixed 200 m trim, no routes for synthetic trips, no server sync.
+
 ## Checks
 
 ```sh
 cd web
-npm test               # 81 tests: registry, demo login, trip store, generator, score, api, OBD mock, speed limit map
+npm test               # 146 tests: registry, demo login, trip store, generator, score, api, OBD mock, speed limit map, trip routes
 npm run typecheck:data
 npm run build
 ```
