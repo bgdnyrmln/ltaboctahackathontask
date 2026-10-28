@@ -20,6 +20,7 @@ D: `TripTotals` -> KPIs -> Driver Score
 | `drivingSec` | number >= 0 | time moving |
 | `secOverLimit`, `secOver10`, `secOver20` | number >= 0 | seconds over limit (+ tolerance max(3 km/h, 5% of limit)), over by >10, over by >20 km/h; must satisfy over20 <= over10 <= overLimit <= drivingSec |
 | `secOverPct10`, `secOverPct20`, `secOverPct40` | number >= 0 | seconds more than 10%, 20%, 40% over the limit (r = (speed - limit) / limit); must satisfy pct40 <= pct20 <= pct10 <= overLimit. Older stored trips load with 0. Computed by `speedingBands` in `trips/speeding.ts` |
+| `secPhoneUse` | number >= 0, <= drivingSec | seconds above 10 km/h with in-app phone activity (touch or leaving/returning to the app) in the last 5 s. Only the count is stored, never content. A browser cannot see other apps, calls or unlocks; production would need a native build. Older trips load with 0; OBD trips are always 0 |
 | `harshBrakeCount`, `harshAccelCount` | integer >= 0 | harsh events |
 | `nightKm` | number, <= distanceKm | km driven 23:00-05:00 |
 | `maxContinuousMin` | number, <= trip duration | longest stretch without a stop over 15 min; fatigue context only |
@@ -35,7 +36,7 @@ Example:
   "startedAt": "2026-10-20T08:00:00Z", "endedAt": "2026-10-20T08:30:00Z",
   "distanceKm": 20, "drivingSec": 1500,
   "secOverLimit": 120, "secOver10": 40, "secOver20": 5,
-  "secOverPct10": 60, "secOverPct20": 40, "secOverPct40": 5,
+  "secOverPct10": 60, "secOverPct20": 40, "secOverPct40": 5, "secPhoneUse": 12,
   "harshBrakeCount": 2, "harshAccelCount": 1, "nightKm": 0,
   "maxContinuousMin": 15, "coverage": 0.95, "speedLimitSource": "road_type_default", "source": "synthetic"
 }

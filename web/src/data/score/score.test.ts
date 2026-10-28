@@ -24,6 +24,7 @@ const totals = (o: Partial<TripTotals> = {}): TripTotals => ({
   secOverPct10: 50,
   secOverPct20: 50,
   secOverPct40: 0,
+  secPhoneUse: 0,
   harshBrakeCount: 9, // 6 / 100 km
   harshAccelCount: 6, // 4 / 100 km
   nightKm: 18,

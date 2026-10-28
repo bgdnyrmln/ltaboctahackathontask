@@ -16,6 +16,9 @@ export interface AggregateOptions {
   vehicleId: string | null;
   samples: SpeedSample[]; // ascending t
   limitKmh: (t: number) => number | null;
+  // true when the phone was used (in-app touch or app switch) within the
+  // last PHONE_WINDOW_MS before t; omit when the source cannot know (OBD).
+  phoneActive?: (t: number) => boolean;
   speedLimitSource: TripSummary['speedLimitSource'];
   source: TripSummary['source'];
   expectedHz?: number;
@@ -26,6 +29,8 @@ const MERGE_MS = 3000;
 const MOVING_KMH = 5;
 const BREAK_MS = 15 * 60_000; // a stop this long ends a continuous stretch
 const MAX_GAP_MS = 3000; // GPS/OBD gaps longer than this are not interpolated
+export const PHONE_MIN_KMH = 10;
+export const PHONE_WINDOW_MS = 5000;
 
 const isNight = (t: number) => {
   const h = rigaParts(new Date(t)).hour;
@@ -47,6 +52,7 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
   let pct10Ms = 0;
   let pct20Ms = 0;
   let pct40Ms = 0;
+  let phoneMs = 0;
   let brakes = 0;
   let accels = 0;
   let lastBrake = -Infinity;
@@ -78,6 +84,7 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
         if (b.overPct20) pct20Ms += dt;
         if (b.overPct40) pct40Ms += dt;
       }
+      if (cur.speedKmh > PHONE_MIN_KMH && o.phoneActive?.(cur.t)) phoneMs += dt;
       if (stretchStart === null || (stoppedSince !== null && cur.t - stoppedSince >= BREAK_MS)) {
         stretchStart = cur.t;
       }
@@ -113,6 +120,7 @@ export function aggregateTrip(o: AggregateOptions): TripSummary {
     secOverPct10: Math.round(pct10Ms / 1000),
     secOverPct20: Math.round(pct20Ms / 1000),
     secOverPct40: Math.round(pct40Ms / 1000),
+    secPhoneUse: Math.round(phoneMs / 1000),
     harshBrakeCount: brakes,
     harshAccelCount: accels,
     nightKm: Math.min(Math.round(nightKm * 100) / 100, Math.round(distanceKm * 100) / 100),

@@ -18,6 +18,7 @@ export interface TripSummary {
   secOverPct10: number; // more than 10% over the limit (see speeding.ts)
   secOverPct20: number; // more than 20% over
   secOverPct40: number; // more than 40% over
+  secPhoneUse: number; // above 10 km/h with in-app phone activity in the last 5 s (count only, no content)
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number; // 23:00-05:00
@@ -44,6 +45,7 @@ export interface TripTotals {
   secOverPct10: number;
   secOverPct20: number;
   secOverPct40: number;
+  secPhoneUse: number;
   harshBrakeCount: number;
   harshAccelCount: number;
   nightKm: number;

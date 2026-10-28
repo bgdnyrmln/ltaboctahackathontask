@@ -19,6 +19,7 @@ const trip = (id: string, driverId = 'drv-001'): TripSummary => ({
   secOverPct10: 5,
   secOverPct20: 5,
   secOverPct40: 0,
+  secPhoneUse: 0,
   harshBrakeCount: 2,
   harshAccelCount: 1,
   nightKm: 0,

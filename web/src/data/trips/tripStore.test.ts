@@ -38,6 +38,7 @@ function trip(overrides: Partial<TripSummary> = {}): TripSummary {
     secOverPct10: 5,
     secOverPct20: 5,
     secOverPct40: 0,
+    secPhoneUse: 0,
     harshBrakeCount: 2,
     harshAccelCount: 1,
     nightKm: 0,
@@ -220,10 +221,24 @@ test('an old sqlite database gains the new columns and keeps its rows', async ()
   );
   const repo = await createSqliteTripRepository(driver);
   const old = await repo.get('old-1');
-  assert.deepEqual([old?.secOverPct10, old?.secOverPct20, old?.secOverPct40, old?.maxContinuousMin], [0, 0, 0, 0]);
+  assert.deepEqual([old?.secOverPct10, old?.secOverPct20, old?.secOverPct40, old?.secPhoneUse, old?.maxContinuousMin], [0, 0, 0, 0, 0]);
   await repo.save([trip({ id: 'new-1' })]);
   assert.equal((await repo.get('new-1'))?.secOverPct10, 5);
   // Opening again is a no-op.
   await createSqliteTripRepository(driver);
   assert.equal((await repo.list()).length, 2);
+});
+
+describe('phone use', () => {
+  test('secPhoneUse is a non-negative count within driving time and is summed', () => {
+    validateTrip(trip({ secPhoneUse: 30 }));
+    assert.throws(() => validateTrip(trip({ secPhoneUse: 1600 })), /secPhoneUse exceeds drivingSec/);
+    assert.throws(() => validateTrip(trip({ secPhoneUse: -1 })), /secPhoneUse must be/);
+    assert.equal(sumTrips([trip({ secPhoneUse: 30 }), trip({ id: 'trip-2', secPhoneUse: 12 })]).secPhoneUse, 42);
+  });
+
+  test('trips stored before phone use existed load with 0', () => {
+    const { secPhoneUse: _p, ...legacy } = trip({ secPhoneUse: 9 });
+    assert.equal(upgradeTrip(legacy).secPhoneUse, 0);
+  });
 });
