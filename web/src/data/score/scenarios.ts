@@ -53,7 +53,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'typical',
     title: 'Typical driver: some speeding, 6 harsh brakes and 4 harsh accelerations per 100 km',
     totals: make(typical),
-    expect: { min: 70, max: 80 },
+    expect: { min: 75, max: 85 },
     confidence: 'medium',
   },
   {
@@ -64,7 +64,7 @@ export const SCENARIOS: Scenario[] = [
       secOverPct10: 1200, secOverPct20: 500, secOverPct40: 100,
       harshBrakeCount: 6, harshAccelCount: 4,
     }),
-    expect: { min: 35, max: 50 },
+    expect: { min: 45, max: 58 },
     confidence: 'medium',
   },
   {
@@ -75,14 +75,14 @@ export const SCENARIOS: Scenario[] = [
       secOverPct10: 900, secOverPct20: 400, secOverPct40: 80,
       harshBrakeCount: 35, harshAccelCount: 28,
     }),
-    expect: { min: 5, max: 25 },
+    expect: { min: 20, max: 35 },
     confidence: 'medium',
   },
   {
     id: 'harsh_only',
     title: 'No speeding but very frequent harsh braking and acceleration',
     totals: make({ harshBrakeCount: 25, harshAccelCount: 20 }),
-    expect: { min: 45, max: 60 },
+    expect: { min: 55, max: 70 },
     confidence: 'medium',
   },
   {
@@ -99,7 +99,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'noisy_data',
     title: 'Same driving as typical, but only half the trip has valid readings',
     totals: make({ ...typical, coverage: 0.5 }),
-    expect: { min: 70, max: 80 },
+    expect: { min: 75, max: 85 },
     confidence: 'low',
   },
   {
@@ -110,10 +110,31 @@ export const SCENARIOS: Scenario[] = [
     confidence: 'insufficient',
   },
   {
+    id: 'night_only',
+    title: 'Same as typical plus lots of night driving, but no long stretch: night alone costs nothing',
+    totals: make({ ...typical, nightKm: 90, maxContinuousMin: 60 }),
+    expect: { min: 75, max: 85 },
+    confidence: 'medium',
+  },
+  {
+    id: 'long_day_drive',
+    title: 'Same as typical plus a 150 min stretch without a break, in daylight',
+    totals: make({ ...typical, maxContinuousMin: 150 }),
+    expect: { min: 72, max: 78 },
+    confidence: 'medium',
+  },
+  {
     id: 'long_night_drive',
-    title: 'Same as typical plus long night driving: context for advice, not a penalty',
+    title: 'Same as typical plus a 150 min stretch with 60% night driving: night makes a long stretch count more',
     totals: make({ ...typical, nightKm: 90, maxContinuousMin: 150 }),
-    expect: { min: 70, max: 80 },
+    expect: { min: 70, max: 76 },
+    confidence: 'medium',
+  },
+  {
+    id: 'very_long_night_drive',
+    title: 'Same as typical plus a 200 min stretch at night: fatigue KPI hits its floor',
+    totals: make({ ...typical, nightKm: 90, maxContinuousMin: 200 }),
+    expect: { min: 60, max: 68 },
     confidence: 'medium',
   },
 ];

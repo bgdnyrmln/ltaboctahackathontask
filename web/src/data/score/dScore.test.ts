@@ -88,7 +88,7 @@ test('inconsistent or missing input gives no score instead of a wrong one', () =
   assert.equal(r.score, null);
   assert.equal(r.band, null);
   assert.equal(r.confidence, 'insufficient');
-  assert.equal(r.kpis.length, 3);
+  assert.equal(r.kpis.length, 4);
 });
 
 test('under 30 km never produces a score', () => {
@@ -120,8 +120,17 @@ test('more harsh events never raise the score', () => {
   }
 });
 
-test('weights stay 0.5 / 0.3 / 0.2 and night driving is not scored', () => {
+test('weights sum to 1 and night driving without a long stretch is not scored', () => {
   const r = dScore(totals(), []);
-  assert.deepEqual(r.kpis.map((k) => k.weight), [0.5, 0.3, 0.2]);
-  assert.equal(dScore(totals({ nightKm: 150 }), []).score, r.score);
+  assert.deepEqual(r.kpis.map((k) => k.weight), [0.45, 0.25, 0.15, 0.15]);
+  assert.ok(Math.abs(r.kpis.reduce((s, k) => s + k.weight, 0) - 1) < 1e-9);
+  assert.equal(dScore(totals({ nightKm: 150, maxContinuousMin: 60 }), []).score, r.score);
+});
+
+test('fatigue: free up to 2 h, then linear down to zero at 4 h, night scales the excess', () => {
+  const sub = (o: Partial<TripTotals>) => dScore(totals({ nightKm: 0, ...o }), []).kpis[3].subscore;
+  assert.equal(sub({ maxContinuousMin: 120 }), 100);
+  assert.equal(sub({ maxContinuousMin: 180 }), 50);
+  assert.equal(sub({ maxContinuousMin: 240 }), 0);
+  assert.equal(sub({ maxContinuousMin: 150, nightKm: 150 }), 50); // all-night: excess 30 x 2 = 60
 });
