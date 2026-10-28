@@ -1137,8 +1137,21 @@
   border: 1px solid var(--color-border);
 }
 
+.ltm__stage {
+  height: clamp(320px, calc(100dvh - 260px), 680px);
+}
+
+/* Oversized square that turns with the car (sized in JS to the stage diagonal) */
+.ltm__rotator {
+  position: absolute;
+  transform: rotate(calc(var(--bearing, 0deg) * -1));
+  transform-origin: center;
+  will-change: transform;
+}
+
 .ltm__leaflet {
-  height: clamp(320px, calc(100dvh - 300px), 640px);
+  width: 100%;
+  height: 100%;
   background: #eef1f5;
   font-family: var(--font-body);
 }
@@ -1156,8 +1169,9 @@
 .ltm-car {
   position: relative;
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
+  transform: rotate(var(--heading, 0deg));
 }
 
 .ltm-car::before {
@@ -1165,16 +1179,16 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(255, 109, 69, 0.35);
+  background: rgba(255, 109, 69, 0.3);
   animation: car-pulse 1.4s ease-out infinite;
 }
 
 .ltm-car span {
   position: absolute;
-  inset: 7px;
-  border-radius: 50%;
+  inset: 3px;
   background: var(--color-accent);
-  box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(0, 0, 0, 0.35);
+  clip-path: polygon(50% 0%, 92% 100%, 50% 76%, 8% 100%);
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 
 @keyframes car-pulse {
@@ -1206,7 +1220,7 @@
 
 @keyframes sign-in {
   from {
-    transform: scale(0.3);
+    scale: 0.3;
     opacity: 0;
   }
 }
@@ -1215,7 +1229,7 @@
   position: relative;
   display: block;
   width: 30px;
-  height: 38px;
+  height: 30px;
   animation: sign-in 0.4s ease-out;
 }
 
@@ -1228,8 +1242,7 @@
   width: 30px;
   height: 30px;
   border: 3px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+  border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   color: #fff;
   font-family: var(--font-heading);
@@ -1463,12 +1476,62 @@
   left: 42px;
 }
 
-.ltm__follow {
+
+/* Keep marker text upright while the map turns */
+.ltm-sign,
+.ltm-place,
+.ltm-pin,
+.ltm-label {
+  transform: rotate(var(--bearing, 0deg));
+}
+
+.ltm-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-accent-strong);
+  white-space: nowrap;
+  transform-origin: 0 0;
+}
+
+.ltm__zoom {
   position: absolute;
-  bottom: 28px;
-  left: 50%;
+  top: 12px;
+  left: 12px;
   z-index: 1100;
-  min-height: 40px;
-  transform: translateX(-50%);
+  display: grid;
+  overflow: hidden;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.ltm__zoom button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.ltm__zoom button:last-child {
+  border-bottom: 0;
+}
+
+.ltm__attribution {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  padding: 2px 6px;
+  border-top-left-radius: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  color: var(--color-text-muted);
 }
