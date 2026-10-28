@@ -362,9 +362,10 @@ function fitToRoute(steps: Step[], km: number): number[] {
   return profileFrom([...steps.slice(0, -1), ['hold', cruise, extraSec], last])
 }
 
-// Real time by default; 12x is a shortcut for quick demos.
+// 12x by default for quick demos; the simulated clock follows the same speed. 1x is real time.
 export const SIMULATION_SPEEDS = [1, 12] as const
 export type SimulationSpeed = (typeof SIMULATION_SPEEDS)[number]
+export const DEFAULT_SIMULATION_SPEED: SimulationSpeed = 12
 
 let lastPicked: SimTripId | null = null
 
@@ -393,23 +394,22 @@ export function simulatedFixes(tripId: SimTripId = 'rushed', end = Date.now()): 
   })
 }
 
-// The fixes of one run. In real time the trip starts now and every fix carries the time at which it is
-// delivered, so elapsed minutes match the wall clock. A fast run ends now (the whole trip is stamped
-// in the past) so the trip is complete and lands in the current week straight away.
-export function fixesForRun(tripId: SimTripId, speed: SimulationSpeed, now = Date.now()): GpsFix[] {
-  if (speed === 1) {
-    const length = simulatedFixes(tripId, 0).length
-    return simulatedFixes(tripId, now + length * 1000)
-  }
-  return simulatedFixes(tripId, now)
+// Simulated length of a trip in seconds.
+export const runLengthSec = (tripId: SimTripId) => simulatedFixes(tripId, 0).length
+
+// The fixes of one run. The trip starts at the moment of the press and the simulated clock advances one
+// second per fix, so minutes, the trip's start and end and the phone clock (see simClock.ts) agree at any
+// speed. At 12x the whole trip is delivered in a twelfth of its length.
+export function fixesForRun(tripId: SimTripId, _speed: SimulationSpeed, now = Date.now()): GpsFix[] {
+  return simulatedFixes(tripId, now + runLengthSec(tripId) * 1000)
 }
 
-// Feeds the fixes `speed` times faster than real time (1 = real time).
+// Feeds the fixes `speed` times faster than the simulated clock (1 = real time).
 export function startSimulatedDrive(
   tripId: SimTripId,
   onFix: (fix: GpsFix) => void,
   onDone: () => void,
-  speed: SimulationSpeed = 1,
+  speed: SimulationSpeed = DEFAULT_SIMULATION_SPEED,
 ): () => void {
   const fixes = fixesForRun(tripId, speed)
   let i = 0

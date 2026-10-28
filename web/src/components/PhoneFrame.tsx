@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { onLiveTrip } from '../telemetry/liveChannel'
 import { PHONE_FRAME_NAME } from '../telemetry/platform'
+import { simulatedNow, type SimRun } from '../telemetry/simClock'
 import './PhoneFrame.css'
 import { useLang, useT } from '../i18n'
 
@@ -15,11 +17,23 @@ const MIN_SCALE = 0.55
 // app inside keeps its real phone width, so its layout does not change.
 function PhoneClock() {
   const { lang } = useLang()
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState(() => Date.now())
+  const run = useRef<SimRun | null>(null)
+
+  // A simulated trip speeds the clock up for as long as the trip lasts, then it returns to real time.
+  useEffect(
+    () =>
+      onLiveTrip((m) => {
+        if (m.type === 'start') run.current = m.speed ? { at: m.at, speed: m.speed, durationSec: m.durationSec ?? Infinity } : null
+        if (m.type === 'end') run.current = null
+      }),
+    [],
+  )
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000)
+    const id = window.setInterval(() => setNow(simulatedNow(run.current, Date.now())), 250)
     return () => window.clearInterval(id)
   }, [])
+
   return <span>{new Intl.DateTimeFormat(lang === 'lv' ? 'lv-LV' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(now)}</span>
 }
 
