@@ -34,7 +34,7 @@ export interface Trip {
 }
 
 export interface KpiResult {
-  id: 'speeding_share' | 'harsh_events_per_100km' | 'night_share';
+  id: 'speeding_share' | 'harsh_brake_per_100km' | 'harsh_accel_per_100km'; // night is fatigue context only, not a scored KPI
   value: number;
   unit: string;
   exposure: { km: number; hours: number };
