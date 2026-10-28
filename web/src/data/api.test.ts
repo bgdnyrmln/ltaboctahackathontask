@@ -113,6 +113,18 @@ test('a simulated OBD drive is stored as this week\'s latest trip', async () => 
   assert.equal((await api.getWeeklyReport()).trips, before + 1);
 });
 
+test('saveTrip stores a phone trip for the signed-in driver only', async () => {
+  const { api, storage } = make();
+  await api.signIn('DEMO-SID-001');
+  const trip = { ...(await api.recordDemoObdTrip()), id: 'phone-1', source: 'phone' as const };
+  await api.saveTrip(trip);
+  const reloaded = createApi({ storage, now: () => NOW });
+  await reloaded.signIn('DEMO-SID-001');
+  assert.ok((await reloaded.listTrips()).some((t) => t.id === 'phone-1'));
+  await assert.rejects(api.saveTrip({ ...trip, id: 'phone-2', driverId: 'drv-002' }), /another driver/);
+  await assert.rejects(api.saveTrip({ ...trip, id: 'phone-3', distanceKm: -1 }));
+});
+
 test('seeding is idempotent across reloads', async () => {
   const { api, storage } = make();
   await api.signIn('DEMO-SID-001');

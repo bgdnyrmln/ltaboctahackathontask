@@ -18,6 +18,7 @@ await api.deleteMyData();               // GDPR: removes trips, signs out
 await api.signOut();
 await api.resetDemo();                  // restore all demo data (for rehearsals)
 await api.recordDemoObdTrip();          // simulated OBD dongle drive; show OBD_DEMO_LABEL
+await api.saveTrip(trip);               // store a phone-recorded TripSummary for the signed-in driver
 ```
 
 Data calls without a session throw `NotSignedInError`: send the user to login. Show `DEMO_LABEL` ("DEMO login, not Smart-ID") next to the login.
@@ -57,11 +58,22 @@ const api = createApi({ scoreFn: myScore });
 
 Your trips can replace the generator: save `TripSummary[]` (see `docs/trip-store.md`, now including `maxContinuousMin`) through the trip repository.
 
+Static data for the algorithm is available synchronously from `@data` or `@trips`. `generateDemoTrips(recentWeeks(now, 5), now)` returns the same deterministic trips the app shows. `DEMO_PROFILES` describes each demo driver, and `sumTrips` aggregates them.
+
+### Speed limit map
+
+`getSpeedLimitMap().lookup(lat, lon)` returns `{ limitKmh, kind, featureId, name, matchedBy, source: 'map' }`, or `null` when the point has no map coverage. When it returns `null`, keep the road-type default (urban 50, rural 90).
+
+- **Lookup order:** the nearest road segment within 25 m wins. Otherwise the innermost zone containing the point is used: Old Riga 30 inside the Riga built-up area 50.
+- **Labelling:** the bundled data (`SEED_SPEED_LIMITS`) is an illustrative hand-drawn demo for Riga. Show `SPEED_MAP_DEMO_LABEL`.
+- **SQLite:** `SPEED_LIMIT_SCHEMA`, `saveSpeedLimitFeatures`, `loadSpeedLimitFeatures(db, bbox?)` and `loadSpeedLimitMap` store the same data in the `speed_limit_feature` table. A future OpenStreetMap `maxspeed` import (ODbL) can use this table too.
+- **Trip summary:** if a trip used map limits, set `speedLimitSource: 'map'`.
+
 ## Checks
 
 ```sh
 cd web
-npm test               # 67 tests: registry, demo login, trip store, generator, score, api, OBD mock
+npm test               # 81 tests: registry, demo login, trip store, generator, score, api, OBD mock, speed limit map
 npm run typecheck:data
 npm run build
 ```
