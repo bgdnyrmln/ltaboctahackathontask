@@ -168,3 +168,31 @@ test('invalid phone seconds give no score', () => {
   assert.equal(isValidTotals({ ...totals(), secPhoneUse: -1 } as TripTotals), false);
   assert.equal(dScore({ ...totals(), secPhoneUse: 20_000 } as TripTotals, []).score, null);
 });
+
+test('far-below-the-limit is a small sixth KPI that needs both new fields', () => {
+  const six = dScore({ ...totals(), secPhoneUse: 100, secTooSlow: 500 } as TripTotals, []);
+  assert.equal(six.kpis.length, 6);
+  assert.deepEqual(six.kpis.map((k) => k.weight), [0.3, 0.2, 0.1, 0.15, 0.2, 0.05]);
+  assert.ok(Math.abs(six.kpis.reduce((s, k) => s + k.weight, 0) - 1) < 1e-9);
+  assert.equal(six.kpis[5].id, 'too_slow_share');
+  assert.equal(six.kpis[5].value, 5);
+  // Without the phone field the slow field is ignored rather than guessed around.
+  const { secPhoneUse: _p, ...noPhone } = totals();
+  assert.equal(dScore({ ...noPhone, secTooSlow: 500 } as TripTotals, []).kpis.length, 4);
+});
+
+test('more far-below-the-limit time never raises the score and costs little', () => {
+  const at = (secTooSlow: number) => dScore({ ...totals(), secPhoneUse: 100, secTooSlow } as TripTotals, []).score ?? 0;
+  let prev = Infinity;
+  for (const sec of [0, 300, 1000, 2000, 5000]) {
+    const score = at(sec);
+    assert.ok(score <= prev, `${sec} s raised the score`);
+    prev = score;
+  }
+  assert.ok(at(0) - at(5000) <= 6, 'weight 0.05 must keep the effect small');
+});
+
+test('invalid slow seconds give no score', () => {
+  assert.equal(isValidTotals({ ...totals(), secTooSlow: 20_000 } as TripTotals), false);
+  assert.equal(isValidTotals({ ...totals(), secTooSlow: -5 } as TripTotals), false);
+});
