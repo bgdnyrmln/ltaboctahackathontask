@@ -26,8 +26,8 @@ export function RegisterConsent() {
         <form className="auth-card" onSubmit={submit}>
           <h1 className="auth-card__title">Your data, your choice</h1>
           <p className="auth-card__lead">
-            We only score how you drive. Profile data such as licence age is shown separately and never changes your
-            score.
+            We score how you drive. Profile data such as licence age never changes your behaviour score; it only
+            adjusts a separate &quot;with profile&quot; number shown next to it.
           </p>
 
           <div className="consents">
