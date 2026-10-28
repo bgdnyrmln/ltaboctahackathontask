@@ -129,12 +129,12 @@ test('weights sum to 1 and night driving without a long stretch is not scored', 
   assert.equal(dScore({ ...totals({ nightKm: 150, maxContinuousMin: 60 }), secPhoneUse: 0 }, []).score, r.score);
 });
 
-test('fatigue: free up to 2 h, then linear down to zero at 4 h, night scales the excess', () => {
+test('fatigue: free up to 4 h, then linear down to zero at 6 h, night scales the excess', () => {
   const sub = (o: Partial<TripTotals>) => dScore(totals({ nightKm: 0, ...o }), []).kpis[3].subscore;
-  assert.equal(sub({ maxContinuousMin: 120 }), 100);
-  assert.equal(sub({ maxContinuousMin: 180 }), 50);
-  assert.equal(sub({ maxContinuousMin: 240 }), 0);
-  assert.equal(sub({ maxContinuousMin: 150, nightKm: 150 }), 50); // all-night: excess 30 x 2 = 60
+  assert.equal(sub({ maxContinuousMin: 240 }), 100);
+  assert.equal(sub({ maxContinuousMin: 300 }), 50);
+  assert.equal(sub({ maxContinuousMin: 360 }), 0);
+  assert.equal(sub({ maxContinuousMin: 270, nightKm: 150 }), 50); // all-night: excess 30 x 2 = 60
 });
 
 test('phone KPI exists only when the totals carry secPhoneUse, with its own weights', () => {
