@@ -24,6 +24,11 @@ Audience: Agent B (frontend) and Agent D (scoring). Covers the HACK-15 mock data
 | `vehicle.make`, `vehicle.model` | string or unknown | text | `Skoda`, `Octavia` | safe to show |
 | `vehicle.year` | integer or unknown | year | `2019` | safe to show; not a score input yet |
 | `vehicle.inspectionValidUntil` | `YYYY-MM-DD`, unknown or absent | date | `2027-04-30` | profile factor; use `isInspectionOverdue(vehicle, now)` (true, false or null when unknown) |
+| `vehicle.fuelType` | `petrol`, `diesel`, `hybrid`, `electric`, `lpg`, unknown or absent | enum | `petrol` | safe to show; display and profile layer only, never the driving score |
+| `vehicle.powerKw` | integer 20-600, unknown or absent | kW | `110` | safe to show |
+| `vehicle.bodyType` | `hatchback`, `sedan`, `estate`, `suv`, `van`, unknown or absent | enum | `estate` | safe to show |
+| `vehicle.massKg` | integer 500-3500, unknown or absent | kg (kerb) | `1350` | safe to show; `powerToWeight(vehicle)` gives kW per tonne or null |
+| `vehicle.seats` | integer 1-9, unknown or absent | count | `5` | safe to show |
 | `vehicle.synthetic` | `true` | flag | `true` | demo badge |
 
 Unknown is always the object `{ "kind": "unknown" }`. Use `isUnknown(value)` and render a placeholder such as "Not available". Never render it as `0`, an empty string or a guessed value.
@@ -41,13 +46,13 @@ Success:
   "profile": {
     "driver": { "id": "drv-001", "displayName": "Demo Driver Anna", "licenseCategories": ["B"], "licenseSince": "2016-05-01", "claimsLast5y": 0, "penaltyPoints": 0, "birthYear": 1991, "synthetic": true },
     "vehicles": [
-      { "id": "veh-001", "ownerDriverId": "drv-001", "plateLabel": "DEMO-101", "make": "Skoda", "model": "Octavia", "year": 2019, "inspectionValidUntil": "2027-04-30", "synthetic": true }
+      { "id": "veh-001", "ownerDriverId": "drv-001", "plateLabel": "DEMO-101", "make": "Skoda", "model": "Octavia", "year": 2019, "inspectionValidUntil": "2027-04-30", "fuelType": "petrol", "powerKw": 110, "bodyType": "estate", "massKg": 1350, "seats": 5, "synthetic": true }
     ]
   }
 }
 ```
 
-Driver with missing data (`DEMO-SID-003`): same shape, with `{ "kind": "unknown" }` in `licenseCategories`, `licenseSince`, `claimsLast5y`, `penaltyPoints`, `birthYear`, `make`, `model`, `year` and `inspectionValidUntil`.
+Driver with missing data (`DEMO-SID-003`): same shape, with `{ "kind": "unknown" }` in `licenseCategories`, `licenseSince`, `claimsLast5y`, `penaltyPoints`, `birthYear`, `make`, `model`, `year`, `inspectionValidUntil` and every vehicle spec (`fuelType`, `powerKw`, `bodyType`, `massKg`, `seats`).
 
 Demo profile cases for D's profile coefficient (on 2026-10-28):
 - Anna: licence since 2016, 0 incidents, 0 points, inspection valid until 2027-04-30.

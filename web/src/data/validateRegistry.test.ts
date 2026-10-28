@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createDemoSmartIdAuth } from './demoAuth.ts';
 import { createCsddMockRegistry } from './registry.ts';
 import { SEED_DEMO_IDENTITIES, SEED_DRIVERS, SEED_VEHICLES } from './seed.ts';
-import { isInspectionOverdue, known, UNKNOWN } from './types.ts';
+import { isInspectionOverdue, known, powerToWeight, UNKNOWN } from './types.ts';
 import type { Driver, Vehicle } from './types.ts';
 import { validateRegistry } from './validateRegistry.ts';
 
@@ -159,4 +159,34 @@ test('inspection is valid through its expiry day', () => {
   assert.equal(isInspectionOverdue(v, new Date('2026-10-28T20:00:00Z')), false);
   assert.equal(isInspectionOverdue(v, new Date('2026-10-29T08:00:00Z')), true);
   assert.equal(isInspectionOverdue(vehicle(), NOW), null);
+});
+
+test('vehicle specs: absent or unknown is fine, bad values are reported', () => {
+  assert.deepEqual(
+    problemsOf([driver()], [vehicle({ fuelType: UNKNOWN, powerKw: UNKNOWN, bodyType: UNKNOWN, massKg: UNKNOWN, seats: UNKNOWN })]),
+    [],
+  );
+  assert.deepEqual(
+    problemsOf(
+      [driver()],
+      // @ts-expect-error invalid enum values on purpose
+      [vehicle({ fuelType: 'steam', bodyType: 'tank', powerKw: 5, massKg: 1200.5, seats: 0 })],
+    ),
+    [
+      'vehicle:v1: fuelType must be one of petrol, diesel, hybrid, electric, lpg or unknown',
+      'vehicle:v1: bodyType must be one of hatchback, sedan, estate, suv, van or unknown',
+      'vehicle:v1: powerKw must be an integer 20-600 or unknown',
+      'vehicle:v1: massKg must be an integer 500-3500 or unknown',
+      'vehicle:v1: seats must be an integer 1-9 or unknown',
+    ],
+  );
+});
+
+test('seeded vehicles carry specs, and power-to-weight needs both values', () => {
+  const [octavia, v60, unknownCar] = SEED_VEHICLES;
+  assert.deepEqual([known(octavia.fuelType), known(octavia.powerKw), known(octavia.bodyType), known(octavia.seats)], ['petrol', 110, 'estate', 5]);
+  assert.equal(powerToWeight(octavia), 81.5); // kW per tonne
+  assert.equal(powerToWeight(v60), 76.3);
+  assert.equal(powerToWeight(unknownCar), null);
+  assert.equal(powerToWeight(vehicle()), null); // fields absent
 });

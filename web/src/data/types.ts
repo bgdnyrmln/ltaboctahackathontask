@@ -37,7 +37,27 @@ export interface Vehicle {
   model: Maybe<string>;
   year: Maybe<number>;
   inspectionValidUntil?: Maybe<string>; // ISO date of the technical inspection expiry; absent = unknown
+  // Registration-certificate style specs, for display and D's profile layer
+  // only; they never change the 0-100 driving score. Absent = unknown.
+  fuelType?: Maybe<FuelType>;
+  powerKw?: Maybe<number>;
+  bodyType?: Maybe<BodyType>;
+  massKg?: Maybe<number>; // kerb mass
+  seats?: Maybe<number>;
   synthetic: true;
+}
+
+export const FUEL_TYPES = ['petrol', 'diesel', 'hybrid', 'electric', 'lpg'] as const;
+export type FuelType = (typeof FUEL_TYPES)[number];
+
+export const BODY_TYPES = ['hatchback', 'sedan', 'estate', 'suv', 'van'] as const;
+export type BodyType = (typeof BODY_TYPES)[number];
+
+// kW per tonne of kerb mass; null when either value is unknown.
+export function powerToWeight(vehicle: Vehicle): number | null {
+  const kw = known(vehicle.powerKw);
+  const kg = known(vehicle.massKg);
+  return kw === null || kg === null || kg <= 0 ? null : Math.round((kw / kg) * 1000 * 10) / 10;
 }
 
 // Absent and UNKNOWN both read as unknown.

@@ -1,4 +1,4 @@
-import { isUnknown } from './types.ts';
+import { BODY_TYPES, FUEL_TYPES, isUnknown } from './types.ts';
 import type { Driver, Vehicle } from './types.ts';
 
 export interface RegistryProblem {
@@ -114,6 +114,25 @@ export function validateRegistry(
     if (inspection !== undefined && !isUnknown(inspection)) {
       if (typeof inspection !== 'string' || !ISO_DATE.test(inspection) || Number.isNaN(Date.parse(inspection))) {
         add('vehicle', id, 'inspectionValidUntil must be YYYY-MM-DD or unknown');
+      }
+    }
+    const fuel = v?.fuelType;
+    if (fuel !== undefined && !isUnknown(fuel) && !(FUEL_TYPES as readonly string[]).includes(fuel)) {
+      add('vehicle', id, `fuelType must be one of ${FUEL_TYPES.join(', ')} or unknown`);
+    }
+    const body = v?.bodyType;
+    if (body !== undefined && !isUnknown(body) && !(BODY_TYPES as readonly string[]).includes(body)) {
+      add('vehicle', id, `bodyType must be one of ${BODY_TYPES.join(', ')} or unknown`);
+    }
+    const ranges = [
+      ['powerKw', 20, 600],
+      ['massKg', 500, 3500], // passenger cars and light vans (category B)
+      ['seats', 1, 9],
+    ] as const;
+    for (const [key, min, max] of ranges) {
+      const n = v?.[key];
+      if (n !== undefined && !isUnknown(n) && !(Number.isInteger(n) && n >= min && n <= max)) {
+        add('vehicle', id, `${key} must be an integer ${min}-${max} or unknown`);
       }
     }
     if (v?.synthetic !== true) add('vehicle', id, 'synthetic must be true');
