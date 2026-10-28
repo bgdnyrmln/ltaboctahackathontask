@@ -3,7 +3,7 @@
 // behaviour / P, so a higher P (riskier profile) lowers it. Only experience and
 // vehicle age exist in C's mock data today; the other inputs are skipped as
 // "no data" until they are added. All numbers are preliminary and illustrative.
-import { isUnknown } from '../types.ts';
+import { isInspectionOverdue, known } from '../types.ts';
 import type { Profile } from '../types.ts';
 
 export const P_MIN = 0.8;
@@ -133,13 +133,19 @@ export function profileRisk(inputs: ProfileInputs, now: Date, includeAge = false
   return { p: r2(p), factors };
 }
 
-// Maps C's mock Profile onto the inputs that exist there today.
-export function inputsFromProfile(profile: Profile): ProfileInputs {
+// Maps C's mock Profile onto the profile inputs. Missing fields stay null and
+// are skipped by profileRisk. Age comes from birth year only (data minimisation).
+export function inputsFromProfile(profile: Profile, now: Date = new Date()): ProfileInputs {
   const { driver, vehicles } = profile;
-  const year = vehicles[0]?.year;
+  const vehicle = vehicles[0];
+  const birthYear = known(driver.birthYear);
   return {
-    licenseSince: isUnknown(driver.licenseSince) ? null : driver.licenseSince,
-    vehicleYear: year === undefined || isUnknown(year) ? null : year,
+    licenseSince: known(driver.licenseSince),
+    claimsLast5y: known(driver.claimsLast5y),
+    penaltyPoints: known(driver.penaltyPoints),
+    driverAge: birthYear === null ? null : now.getUTCFullYear() - birthYear,
+    vehicleYear: vehicle ? known(vehicle.year) : null,
+    inspectionOverdue: vehicle ? isInspectionOverdue(vehicle, now) : null,
   };
 }
 
