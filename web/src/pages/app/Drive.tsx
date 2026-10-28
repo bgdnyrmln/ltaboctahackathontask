@@ -9,7 +9,7 @@ import { useDriverData } from '../../demo/useDriverData'
 import { breakLimitLabel, breakStatus, fmtDuration } from '../../telemetry/breaks'
 import { obdConnectedDevice, rpmFor } from '../../telemetry/obdLink'
 import { canRecordTrips, isPhoneSimulator } from '../../telemetry/platform'
-import { DEFAULT_SIMULATION_SPEED, SIMULATION_SPEEDS, type SimulationSpeed } from '../../telemetry/simulatedDrive'
+import { SIMULATION_SPEED } from '../../telemetry/simulatedDrive'
 import { MIN_TRIP } from '../../telemetry/tripRecorder'
 import { useTripRecording } from '../../telemetry/useTripRecording'
 import { useT } from '../../i18n'
@@ -39,7 +39,6 @@ export function Drive() {
   const { addTrip } = useDriverData()
   const { status, stats, error, routeDone, start, stop, markPhone } = useTripRecording()
   const [message, setMessage] = useState<string | null>(null)
-  const [simSpeed, setSimSpeed] = useState<SimulationSpeed>(DEFAULT_SIMULATION_SPEED)
   const isDesktop = useIsDesktop()
   const navigate = useNavigate()
   if (state.status !== 'signedIn') return null
@@ -72,9 +71,7 @@ export function Drive() {
               : routeDone
                 ? t('Route finished')
                 : simulator
-                  ? simSpeed === 1
-                    ? t('Simulated drive · real time')
-                    : t('Simulated drive · {n}× speed', { n: simSpeed })
+                  ? t('Simulated drive · {n}× speed', { n: SIMULATION_SPEED })
                   : t('Recording')}
           </p>
           <p className={`live__speed${stats?.overLimit ? ' is-over' : stats?.tooSlow ? ' is-slow' : ''}`}>
@@ -163,18 +160,6 @@ export function Drive() {
             <p className="form-note">
               <strong>{t('Phone simulator.')}</strong>{' '}
               {t('No real GPS here: Start trip drives a random fake trip through Riga. Watch it on the map next to this phone.')}
-              <span className="seg" role="group" aria-label={t('Simulation speed')}>
-                {SIMULATION_SPEEDS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={simSpeed === s ? 'is-on' : ''}
-                    onClick={() => setSimSpeed(s)}
-                  >
-                    {s === 1 ? t('Real time') : t('Fast ×{n}', { n: s })}
-                  </button>
-                ))}
-              </span>
             </p>
           ) : (
             <>
@@ -209,7 +194,7 @@ export function Drive() {
             className="btn btn--primary btn--big"
             onClick={() => {
               setMessage(null)
-              start(simSpeed)
+              start()
             }}
           >
             {t('Start trip')}
