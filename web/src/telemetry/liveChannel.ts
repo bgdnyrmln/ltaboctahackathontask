@@ -2,7 +2,7 @@
 // same site, e.g. the live map next to the phone. Positions are shown live
 // only; they are never stored.
 export type LiveTripMessage =
-  | { type: 'start'; at: number }
+  | { type: 'start'; at: number; from?: string; to?: string }
   | {
       type: 'fix'
       lat: number

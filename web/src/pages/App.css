@@ -1334,9 +1334,10 @@
 
 .ltm__summary {
   position: absolute;
+  top: 12px;
   right: 12px;
-  bottom: 28px;
-  left: 12px;
+  max-width: 290px;
+  font-size: 14px;
   display: grid;
   gap: 8px;
   justify-items: start;
@@ -1349,6 +1350,7 @@
 .ltm__summary-title {
   font-family: var(--font-heading);
   font-weight: 800;
+  font-size: 15px;
 }
 
 .ltm__legend {
@@ -1408,4 +1410,55 @@
 /* Toned OpenStreetMap tiles */
 .ltm__leaflet .leaflet-tile-pane {
   filter: grayscale(1) brightness(1.06) contrast(0.88);
+}
+
+/* Named places on the live map */
+.ltm-place {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+
+.ltm-place b {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-text);
+  box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-size: 17px;
+}
+
+.ltm-place em {
+  position: absolute;
+  top: 7px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--color-text);
+  font-style: normal;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.ltm__dest {
+  margin-bottom: 4px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.ltm-place--left em {
+  right: 42px;
+}
+
+.ltm-place--right em {
+  left: 42px;
 }

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { onLiveTrip, type LiveTripMessage } from '../telemetry/liveChannel'
-import { ROUTE } from '../telemetry/simulatedDrive'
+import { PLACES, ROUTE } from '../telemetry/simulatedDrive'
 
 // Real map (OpenStreetMap tiles, no API key) next to the phone. Shows the
 // trip driven on the phone live: trail coloured by speeding, the car, speed limit
@@ -32,6 +32,9 @@ const pinIcon = (kind: 'brake' | 'accel') =>
     [15, 38],
   )
 
+const placeIcon = (glyph: string, name: string, side: 'left' | 'right') =>
+  icon(`<span class="ltm-place ltm-place--${side}"><b>${glyph}</b><em>${name}</em></span>`, [34, 34], [17, 17])
+
 export function LiveTripMap() {
   const el = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
@@ -51,6 +54,7 @@ export function LiveTripMap() {
   const [live, setLive] = useState<Live | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
   const [overShare, setOverShare] = useState(0)
+  const [destination, setDestination] = useState<string | null>(null)
 
   // Build the map once.
   useEffect(() => {
@@ -69,13 +73,22 @@ export function LiveTripMap() {
         f.points.map((p) => [p.lat, p.lon] as L.LatLngTuple),
         { color: '#ff6d45', weight: 2, dashArray: '6 6', fillColor: '#ff6d45', fillOpacity: 0.08 },
       )
-        .bindTooltip(`${f.name} · ${f.limitKmh} km/h`, { permanent: true, direction: 'left', className: 'ltm-tip' })
+        .bindTooltip(`${f.limitKmh} km/h zone`, { permanent: true, direction: 'left', className: 'ltm-tip' })
         .addTo(m)
     }
 
     // The planned route, faint, so viewers see where the drive goes.
     const planned = L.polyline(ROUTE, { color: '#7d8796', weight: 4, opacity: 0.45, dashArray: '2 9' }).addTo(m)
     m.fitBounds(planned.getBounds(), { padding: [36, 36] })
+    // Named ends of the route: Old Riga and the Akropole Rīga mall.
+    L.marker([PLACES.oldRiga.lat, PLACES.oldRiga.lon], {
+      icon: placeIcon('⛪', PLACES.oldRiga.name, 'right'),
+      zIndexOffset: 300,
+    }).addTo(m)
+    L.marker([PLACES.akropole.lat, PLACES.akropole.lon], {
+      icon: placeIcon('🛍', PLACES.akropole.name, 'left'),
+      zIndexOffset: 300,
+    }).addTo(m)
     tripLayer.current = L.layerGroup().addTo(m)
     map.current = m
 
@@ -105,6 +118,7 @@ export function LiveTripMap() {
           setLive(null)
           setSummary(null)
           setOverShare(0)
+          setDestination(msg.to ?? null)
           return
         }
         if (msg.type === 'fix') {
@@ -185,6 +199,7 @@ export function LiveTripMap() {
 
         {live && status === 'live' && (
           <div className={`ltm__readout${live.overLimit ? ' is-over' : ''}`}>
+            {destination && <p className="ltm__dest">To {destination}</p>}
             <p className="ltm__speed">
               {Math.round(live.kmh)}
               <small> km/h</small>
@@ -200,7 +215,13 @@ export function LiveTripMap() {
 
         {summary && status === 'done' && (
           <div className="ltm__summary">
-            <p className="ltm__summary-title">{summary.saved ? 'Trip saved' : 'Trip too short, not saved'}</p>
+            <p className="ltm__summary-title">
+              {summary.saved
+                ? destination
+                  ? `Arrived at ${destination} · trip saved`
+                  : 'Trip saved'
+                : 'Trip too short, not saved'}
+            </p>
             <p>
               {summary.distanceKm.toFixed(1)} km · over the limit {overShare}% of the time · {summary.harshBrakes} harsh
               braking · {summary.harshAccels} harsh acceleration
