@@ -47,6 +47,11 @@ export const SEED_VEHICLES: Vehicle[] = [
     model: 'Octavia',
     year: 2019,
     inspectionValidUntil: '2027-04-30',
+    fuelType: 'petrol',
+    powerKw: 110,
+    bodyType: 'estate',
+    massKg: 1350,
+    seats: 5,
     synthetic: true,
   },
   {
@@ -57,6 +62,11 @@ export const SEED_VEHICLES: Vehicle[] = [
     model: 'V60',
     year: 2021,
     inspectionValidUntil: '2026-09-30', // overdue on the demo date
+    fuelType: 'hybrid',
+    powerKw: 145,
+    bodyType: 'estate',
+    massKg: 1900,
+    seats: 5,
     synthetic: true,
   },
   {
@@ -67,6 +77,11 @@ export const SEED_VEHICLES: Vehicle[] = [
     model: UNKNOWN,
     year: UNKNOWN,
     inspectionValidUntil: UNKNOWN,
+    fuelType: UNKNOWN,
+    powerKw: UNKNOWN,
+    bodyType: UNKNOWN,
+    massKg: UNKNOWN,
+    seats: UNKNOWN,
     synthetic: true,
   },
 ];
