@@ -5,10 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Shared mock data and contracts from Agent C live in ../src/data.
+  // Shared mock data and contracts live inside the web app.
   resolve: {
     alias: {
-      '@data': fileURLToPath(new URL('../src/data/index.ts', import.meta.url)),
+      '@data': fileURLToPath(new URL('./src/data/index.ts', import.meta.url)),
     },
   },
   server: {
