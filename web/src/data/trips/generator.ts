@@ -95,6 +95,7 @@ function poisson(mean: number, rnd: () => number): number {
 
 const between = (rnd: () => number, lo: number, hi: number) => lo + rnd() * (hi - lo);
 const round = (x: number, digits = 1) => Math.round(x * 10 ** digits) / 10 ** digits;
+const DAY_MS = 24 * 3600 * 1000;
 
 export interface GenerateOptions {
   driverId: string;
@@ -111,13 +112,18 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
 
   weekStarts.forEach((weekStart, w) => {
     const factor = 1 + (n > 1 ? (profile.improvement * (n - 1 - w)) / (n - 1) : 0);
+    // In the week that contains `now`, squeeze the week's schedule into the
+    // days that have already begun, so a mid-week demo shows a normal week's
+    // driving instead of a near-empty one. Past weeks are unchanged.
+    const sinceStart = now ? now.getTime() - rigaToUtc(weekStart, 0, 0).getTime() : Infinity;
+    const daysBegun = sinceStart >= 0 && sinceStart < 7 * DAY_MS ? Math.floor(sinceStart / DAY_MS) + 1 : 7;
 
     for (let i = 0; i < profile.tripsPerWeek; i++) {
       // One stream per trip: a trip's schedule never depends on the window or
       // on how many draws earlier trips used.
       const rnd = mulberry32(hashSeed(`${driverId}|${weekStart}|${i}`));
       const night = rnd() < profile.nightTripShare;
-      const day = Math.floor(rnd() * 7);
+      const day = Math.floor((Math.floor(rnd() * 7) * daysBegun) / 7);
       const hour = night ? [23, 0, 1, 2, 3][Math.floor(rnd() * 5)] : 7 + Math.floor(rnd() * 13);
       const minute = Math.floor(rnd() * 60);
       // Hours 0-4 belong to the next calendar day after a 23:00 start.
@@ -130,6 +136,8 @@ export function generateTrips(opts: GenerateOptions): TripSummary[] {
       const speedKmh = longNight ? between(rnd, 75, 90) : between(rnd, 30, 70);
       const drivingSec = Math.round((distanceKm / speedKmh) * 3600);
       const durationSec = Math.round(drivingSec * between(rnd, 1.05, 1.25));
+      // A trip still being driven is not a finished summary yet.
+      if (now && start.getTime() + durationSec * 1000 > now.getTime()) continue;
       const maxContinuousMin = round(
         longNight ? drivingSec / 60 : Math.min(durationSec, drivingSec * between(rnd, 0.6, 1)) / 60,
       );

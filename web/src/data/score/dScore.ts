@@ -13,13 +13,24 @@ export const SPEED_BAND_WEIGHTS = { upTo10: 0.5, from10to20: 1, from20to40: 2, o
 export const PEAK_SHARE = 0.02; // share of driving time more than 40% over the limit
 export const PEAK_CAP = 60;
 export const MAP_LIMIT_SHARE_MIN = 0.5; // km share with a map speed limit
-// Weights with fatigue as a fourth KPI (sum 1). Preliminary, like the thresholds.
-export const D_WEIGHTS: Record<KpiId, number> = {
+// Weights (sum 1), preliminary like the thresholds. The phone KPI only exists when the trip
+// totals carry secPhoneUse; without it the four-KPI weights apply.
+export const D_WEIGHTS: Record<Exclude<KpiId, 'phone_use_share'>, number> = {
   speeding_share: 0.45,
   harsh_brake_per_100km: 0.25,
   harsh_accel_per_100km: 0.15,
   fatigue_excess_min: 0.15,
 };
+export const D_WEIGHTS_WITH_PHONE: Record<KpiId, number> = {
+  speeding_share: 0.35,
+  harsh_brake_per_100km: 0.2,
+  harsh_accel_per_100km: 0.1,
+  fatigue_excess_min: 0.15,
+  phone_use_share: 0.2,
+};
+export const PHONE_GOOD = 0; // % of driving time
+export const PHONE_BAD = 5;
+const PHONE_PRIOR = 1; // typical share, % of driving time, used for small-sample smoothing
 export const FATIGUE_BAD_EXCESS_MIN = 120; // 2 h beyond the stretch (4 h in total) scores 0
 const SPEEDING_PRIOR = 5; // typical severity-weighted share, % of driving time
 const PRIOR_SEC = 3600;
@@ -27,7 +38,14 @@ const PRIOR_SEC = 3600;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
-export function isValidTotals(t: TripTotals): boolean {
+// secPhoneUse arrives with C's storage change; until then the field is simply absent.
+export type PhoneAwareTotals = TripTotals & { secPhoneUse?: number };
+
+export function hasPhoneData(t: PhoneAwareTotals): boolean {
+  return typeof t.secPhoneUse === 'number' && Number.isFinite(t.secPhoneUse);
+}
+
+export function isValidTotals(t: PhoneAwareTotals): boolean {
   const nums = [
     t.distanceKm, t.drivingSec, t.secOverLimit, t.secOver10, t.secOver20,
     t.secOverPct10, t.secOverPct20, t.secOverPct40, t.harshBrakeCount, t.harshAccelCount,
@@ -39,6 +57,7 @@ export function isValidTotals(t: TripTotals): boolean {
     t.secOverPct40 <= t.secOverPct20 &&
     t.secOverPct20 <= t.secOverPct10 &&
     t.secOverPct10 <= t.secOverLimit &&
+    (t.secPhoneUse === undefined || (Number.isFinite(t.secPhoneUse) && t.secPhoneUse >= 0 && t.secPhoneUse <= t.drivingSec)) &&
     t.secOverLimit <= t.drivingSec &&
     Number.isFinite(t.coverage) && t.coverage >= 0 && t.coverage <= 1
   );
@@ -86,6 +105,8 @@ export function confidenceWithLimits(base: Confidence, trips: TripSummary[]): Co
 export function createDScore(smoothing = 1): ScoreFn {
   return (totals, trips) => {
     const valid = isValidTotals(totals);
+    const withPhone = valid && hasPhoneData(totals);
+    const weights: Record<KpiId, number> = withPhone ? D_WEIGHTS_WITH_PHONE : { ...D_WEIGHTS, phone_use_share: 0 };
     const confidence = valid ? confidenceWithLimits(confidenceOf(totals), trips) : 'insufficient';
 
     const kpis: KpiResult[] = KPI_DEFS.map((def, i) => {
@@ -107,10 +128,10 @@ export function createDScore(smoothing = 1): ScoreFn {
         value: observed === null ? null : r1(observed),
         unit: def.unit,
         subscore: subscore === null ? null : r1(subscore),
-        weight: D_WEIGHTS[def.id],
+        weight: weights[def.id],
         good: def.good,
         bad: def.bad,
-        pointsLost: subscore === null ? null : r1(D_WEIGHTS[def.id] * (100 - subscore)),
+        pointsLost: subscore === null ? null : r1(weights[def.id] * (100 - subscore)),
       };
     });
 
@@ -122,11 +143,33 @@ export function createDScore(smoothing = 1): ScoreFn {
       value: fatigue === null ? null : r1(fatigue),
       unit: 'min beyond 2 h',
       subscore: fatigueSub === null ? null : r1(fatigueSub),
-      weight: D_WEIGHTS.fatigue_excess_min,
+      weight: weights.fatigue_excess_min,
       good: 0,
       bad: FATIGUE_BAD_EXCESS_MIN,
-      pointsLost: fatigueSub === null ? null : r1(D_WEIGHTS.fatigue_excess_min * (100 - fatigueSub)),
+      pointsLost: fatigueSub === null ? null : r1(weights.fatigue_excess_min * (100 - fatigueSub)),
     });
+
+    if (withPhone) {
+      const t = totals as PhoneAwareTotals;
+      const observed = totals.drivingSec > 0 ? ((t.secPhoneUse ?? 0) / totals.drivingSec) * 100 : null;
+      const sec = totals.drivingSec + PRIOR_SEC * smoothing;
+      const smoothed = sec > 0 ? (((t.secPhoneUse ?? 0) + (PHONE_PRIOR / 100) * PRIOR_SEC * smoothing) / sec) * 100 : null;
+      const sub =
+        observed === null || smoothed === null
+          ? null
+          : 100 * (1 - clamp01((smoothed - PHONE_GOOD) / (PHONE_BAD - PHONE_GOOD)));
+      kpis.push({
+        id: 'phone_use_share',
+        label: 'Phone use while driving',
+        value: observed === null ? null : r1(observed),
+        unit: '% of driving time',
+        subscore: sub === null ? null : r1(sub),
+        weight: weights.phone_use_share,
+        good: PHONE_GOOD,
+        bad: PHONE_BAD,
+        pointsLost: sub === null ? null : r1(weights.phone_use_share * (100 - sub)),
+      });
+    }
 
     const usable = valid && confidence !== 'insufficient' && kpis.every((k) => k.subscore !== null);
     let score = usable ? Math.round(kpis.reduce((s, k) => s + k.weight * (k.subscore ?? 0), 0)) : null;

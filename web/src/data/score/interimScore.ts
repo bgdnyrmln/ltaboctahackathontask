@@ -136,6 +136,8 @@ const TIP_TEXT: Record<KpiId, (from: number, to: number) => string> = {
     `You braked hard ${from} times per 100 km. Leaving more distance ahead could bring it to about ${to}.`,
   harsh_accel_per_100km: (from, to) =>
     `You accelerated hard ${from} times per 100 km. Smoother starts could bring it to about ${to}.`,
+  phone_use_share: (from, to) =>
+    `Phone use was ${from}% of your driving time. Keeping it at about ${to}% would help most. Use a mount and set the route before you start.`,
   fatigue_excess_min: (from, to) =>
     `Your longest drive ran ${from} minutes past 2 hours without a stop. Taking a break every 2 hours could bring that to about ${to}.`,
 };
