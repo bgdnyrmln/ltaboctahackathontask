@@ -20,6 +20,7 @@ import {
   type TripSummary,
   type WeeklyReport,
 } from '@data'
+import { fullName, personaOf } from '../demo/personas'
 
 // Insurer view over the same data store the driver app uses (in the prototype:
 // this browser's storage; in production: a central EU database). Insurers only
@@ -32,6 +33,7 @@ const DEMO_SHARING: Record<string, boolean> = { 'drv-001': true, 'drv-002': true
 export type DriverRow = {
   driverId: string
   name: string
+  personalCode: string | null
   plate: string | null
   vehicle: string | null
   sharing: boolean
@@ -80,7 +82,8 @@ export async function loadPortfolio(now = new Date()): Promise<DriverRow[]> {
       const isDeleted = deleted.has(driver.id)
       const base = {
         driverId: driver.id,
-        name: driver.displayName,
+        name: fullName(driver),
+        personalCode: personaOf(driver.id)?.personalCode ?? null,
         plate: vehicle?.plateLabel ?? null,
         vehicle: vehicle ? [show(vehicle.make), show(vehicle.model)].filter(Boolean).join(' ') || null : null,
         sharing,
@@ -109,6 +112,7 @@ export function portfolioCsv(rows: DriverRow[]): string {
   const head = [
     'driver_id',
     'name',
+    'personal_code',
     'plate',
     'week_start',
     'final_score',
@@ -127,6 +131,7 @@ export function portfolioCsv(rows: DriverRow[]): string {
       return [
         r.driverId,
         r.name,
+        r.personalCode ?? '',
         r.plate ?? '',
         s.report.weekStart,
         s.final ?? '',

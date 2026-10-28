@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { nextStepPath, useAuth } from '../auth/AuthContext'
 import { appApi } from '../auth/appApi'
+import { nameForDemoId } from '../demo/personas'
 import { AppShell, Stepper } from '../components/AppShell'
 import './App.css'
 
@@ -108,7 +109,7 @@ export function Login() {
                       }}
                     />
                     <span className="profile-option__body">
-                      <span className="profile-option__name">{option.displayName}</span>
+                      <span className="profile-option__name">{nameForDemoId(option.demoId, option.displayName)}</span>
                       <span className="profile-option__id">{option.demoId}</span>
                     </span>
                   </label>

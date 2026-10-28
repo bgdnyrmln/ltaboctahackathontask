@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '../../auth/AuthContext'
 import { Logo } from '../../components/Logo'
+import { fullName } from '../../demo/personas'
 import { DriverDataProvider } from '../../demo/useDriverData'
 import '../App.css'
 
@@ -21,7 +22,7 @@ export function AppLayout() {
         <header className="mobile-app__bar">
           <Logo />
           <div className="mobile-app__bar-end">
-            <span className="mobile-app__user">{state.profile.driver.displayName}</span>
+            <span className="mobile-app__user">{fullName(state.profile.driver)}</span>
             <span className="demo-badge">Demo data</span>
             <button type="button" className="mobile-app__signout" onClick={signOut}>
               Sign out
