@@ -99,6 +99,20 @@ test('delete my data removes trips, signs out and survives reloads until reset',
   assert.equal((await reloaded.listTrips('2026-10-19')).length, before);
 });
 
+test('a simulated OBD drive is stored as this week\'s latest trip', async () => {
+  const { api } = make();
+  await assert.rejects(api.recordDemoObdTrip(), NotSignedInError);
+  await api.signIn('DEMO-SID-001');
+  const before = (await api.getWeeklyReport()).trips;
+  const trip = await api.recordDemoObdTrip();
+  assert.equal(trip.source, 'obd_mock');
+  assert.equal(trip.driverId, 'drv-001');
+  assert.ok(Date.parse(trip.endedAt) <= NOW.getTime());
+  const week = await api.listTrips();
+  assert.equal(week.at(-1)!.id, trip.id);
+  assert.equal((await api.getWeeklyReport()).trips, before + 1);
+});
+
 test('seeding is idempotent across reloads', async () => {
   const { api, storage } = make();
   await api.signIn('DEMO-SID-001');
