@@ -66,6 +66,9 @@ export class TripRecorder {
   private distanceKm = 0
   private nightKm = 0
   private drivingSec = 0
+  private continuousDrivingSec = 0
+  private maxContinuousDrivingSec = 0
+  private stoppedSec = 0
   private validSec = 0
   private secOverLimit = 0
   private secOver10 = 0
@@ -95,6 +98,8 @@ export class TripRecorder {
       // Gap in data: count the distance but not the time as valid coverage.
       this.distanceKm += haversineKm(prev, sample)
       this.lastSpeedMs = 0
+      this.continuousDrivingSec = 0
+      this.stoppedSec = 0
       return
     }
 
@@ -112,11 +117,17 @@ export class TripRecorder {
     if (isNight(sample.t)) this.nightKm += segKm
 
     if (kmh < MOVING_KMH) {
+      this.stoppedSec += dt
+      if (this.stoppedSec >= 15 * 60) this.continuousDrivingSec = 0
       this.lastSpeedMs = speedMs
       this.brakeRun = this.accelRun = 0
       return
     }
+    if (this.stoppedSec >= 15 * 60) this.continuousDrivingSec = 0
+    this.stoppedSec = 0
     this.drivingSec += dt
+    this.continuousDrivingSec += dt
+    this.maxContinuousDrivingSec = Math.max(this.maxContinuousDrivingSec, this.continuousDrivingSec)
 
     // Road-type default limit: urban 50 unless sustained >70 km/h, then rural 90.
     if (kmh > 70) {
@@ -188,6 +199,7 @@ export class TripRecorder {
       harshBrakeCount: this.harshBrakeCount,
       harshAccelCount: this.harshAccelCount,
       nightKm: Math.min(Math.round(this.nightKm * 100) / 100, distanceKm),
+      maxContinuousMin: Math.round(this.maxContinuousDrivingSec / 60),
       coverage: Math.round(Math.min(1, this.validSec / Math.max(1, elapsedSec)) * 100) / 100,
       speedLimitSource: 'road_type_default',
       source: 'phone',

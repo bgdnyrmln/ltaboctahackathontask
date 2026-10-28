@@ -95,6 +95,7 @@ export function sampleTripsFor(driverId: string, vehicleId: string | null, now =
         harshBrakeCount: brakes,
         harshAccelCount: accels,
         nightKm: Math.min(night, km),
+        maxContinuousMin: Math.round(drivingSec / 60),
         coverage: Math.round((0.84 + rand() * 0.15) * 100) / 100,
         speedLimitSource: 'road_type_default',
         source: 'synthetic',
