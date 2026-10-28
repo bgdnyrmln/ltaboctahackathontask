@@ -21,7 +21,7 @@ export function Header() {
     if (!menuOpen) return
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
-    const desktop = window.matchMedia('(min-width: 992px)')
+    const desktop = window.matchMedia('(min-width: 1200px)')
     const onDesktop = () => desktop.matches && setMenuOpen(false)
     window.addEventListener('keydown', onKey)
     desktop.addEventListener('change', onDesktop)
@@ -58,6 +58,9 @@ export function Header() {
               Install app
             </button>
           )}
+          <Link to="/insurer" className="btn btn--pill btn--outline-light site-header__insurer">
+            For insurers
+          </Link>
           <Link to="/login" className="btn btn--pill btn--outline-light site-header__demo">
             Try demo
           </Link>
@@ -74,12 +77,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav
-        id="mobile-menu"
-        className={`mobile-menu${menuOpen ? ' is-open' : ''}`}
-        aria-label="Main"
-        inert={!menuOpen}
-      >
+      <nav id="mobile-menu" className={`mobile-menu${menuOpen ? ' is-open' : ''}`} aria-label="Main" inert={!menuOpen}>
         <ul className="container">
           {nav.map((item, index) => (
             <li key={item.href} style={{ '--i': index } as React.CSSProperties}>
@@ -92,6 +90,9 @@ export function Header() {
         <div className="container mobile-menu__footer">
           <Link to="/login" className="btn btn--primary" onClick={closeMenu}>
             Try demo
+          </Link>
+          <Link to="/insurer" className="btn btn--outline" onClick={closeMenu}>
+            For insurers
           </Link>
         </div>
       </nav>

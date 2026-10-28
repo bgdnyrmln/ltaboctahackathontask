@@ -227,7 +227,8 @@
   }
 }
 
-@media (min-width: 992px) {
+/* Full header nav needs ~1200 px; below that the header uses the Menu button. */
+@media (min-width: 1200px) {
   .site-nav {
     display: block;
     margin-left: auto;
@@ -854,4 +855,35 @@
   .hero__lead {
     margin-top: 16px;
   }
+}
+
+/* Logo over the orange hero: the orange gauge needle would vanish, draw it dark */
+.site-header:not(.site-header--solid) .logo--light {
+  --logo-accent: #1d1d1f;
+}
+
+/* Insurer portal link in the header */
+.site-header--solid .site-header__insurer {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+@media (max-width: 575px) {
+  .site-header__insurer {
+    display: none;
+  }
+}
+
+.site-header .btn--pill,
+.site-nav a {
+  white-space: nowrap;
+}
+
+.mobile-menu__footer {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-menu__footer .btn {
+  width: 100%;
 }
