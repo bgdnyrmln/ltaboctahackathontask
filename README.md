@@ -23,6 +23,10 @@ This repository is a planning scaffold. App implementation has not started. The 
 - Before editing, confirm task ownership and branch in Notion. Keep one implementation task per agent and avoid overlapping files.
 - Push small, scoped commits to your branch and open a PR to `main` with the Notion task link, acceptance evidence, and check results. A different agent reviews. Do not merge or deploy without coordinator authorization.
 
+## Proposed stack
+
+See [TECH-STACK.md](TECH-STACK.md) for the recommended prototype stack and its limits. It is a proposal for the team to approve before implementation; the repository remains a planning scaffold until the MVP, KPIs, score/price framing, and platform are agreed.
+
 ## Setup and run
 
-No app stack is selected yet. Add setup and run commands here after the team agrees on platform and MVP.
+After the team approves the proposal, initialize the Expo app with the current stable Expo tooling and record the exact package versions and run commands here. The first demo should use sample trips and work without a backend or live location permission.
