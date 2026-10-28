@@ -40,6 +40,7 @@ export interface OctaApi {
   deleteMyData(): Promise<{ tripsDeleted: number }>;
   resetDemo(): Promise<void>;
   recordDemoObdTrip(): Promise<TripSummary>; // simulated dongle, see OBD_DEMO_LABEL
+  saveTrip(trip: TripSummary): Promise<TripSummary>; // e.g. a phone-recorded trip
 }
 
 export interface ApiOptions {
@@ -192,6 +193,15 @@ export function createApi(options: ApiOptions = {}): OctaApi {
         vehicleId: vehicles[0]?.id ?? null,
         startedAt: new Date(now().getTime() - durationMs),
       });
+      await trips.save([trip]);
+      return trip;
+    },
+
+    // Only the signed-in driver's own trips; throws TripValidationError on bad data.
+    async saveTrip(trip) {
+      const { driver } = await requireProfile();
+      if (trip.driverId !== driver.id) throw new Error(`Trip ${trip.id} belongs to another driver`);
+      await ensureSeeded();
       await trips.save([trip]);
       return trip;
     },
