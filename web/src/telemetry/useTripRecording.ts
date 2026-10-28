@@ -1,5 +1,6 @@
 import type { TripSummary } from '@data'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { isNativeMobileApp } from './platform'
 import { TripRecorder, type LiveStats } from './tripRecorder'
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'denied' | 'unsupported' | 'error'
@@ -31,6 +32,11 @@ export function useTripRecording() {
   useEffect(() => cleanup, [cleanup])
 
   const start = useCallback(async () => {
+    // Trips start only from the native mobile app, never from a desktop or browser.
+    if (!isNativeMobileApp()) {
+      setStatus('unsupported')
+      return
+    }
     if (!('geolocation' in navigator)) {
       setStatus('unsupported')
       return

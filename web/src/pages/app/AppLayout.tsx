@@ -13,14 +13,20 @@ const TABS = [
 
 // Mobile app frame: compact top bar, content, bottom tab bar.
 export function AppLayout() {
-  const { state } = useAuth()
+  const { state, signOut } = useAuth()
   if (state.status !== 'signedIn') return null
   return (
     <DriverDataProvider>
       <div className="mobile-app">
         <header className="mobile-app__bar">
           <Logo />
-          <span className="demo-badge">Demo data</span>
+          <div className="mobile-app__bar-end">
+            <span className="mobile-app__user">{state.profile.driver.displayName}</span>
+            <span className="demo-badge">Demo data</span>
+            <button type="button" className="mobile-app__signout" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
         </header>
         <main className="mobile-app__content">
           <Outlet />
@@ -29,7 +35,14 @@ export function AppLayout() {
           {TABS.map((tab) => (
             <NavLink key={tab.to} to={tab.to} end={tab.end} className="tabbar__link">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d={tab.icon} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d={tab.icon}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               {tab.label}
             </NavLink>
